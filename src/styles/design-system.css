@@ -1,0 +1,222 @@
+/* ============================================
+   Taskal Design System - CSS Variables
+   DESIGN_SYSTEM.md のトークンをCSS変数に変換
+   ============================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+    /* --- Primary --- */
+    --color-brand: #3ECF8E;
+    --color-brand-hover: #2BB87A;
+
+    /* --- Neutral --- */
+    --color-bg: #FFFFFF;
+    --color-surface: #F8F9FA;
+    --color-border: #E5E7EB;
+    --color-border-light: #F3F4F6;
+    --color-text-primary: #111827;
+    --color-text-secondary: #6B7280;
+    --color-text-tertiary: #9CA3AF;
+
+    /* --- Sidebar --- */
+    --color-sidebar-bg: #1C1C1C;
+    --color-sidebar-active: #2A2A2A;
+    --color-sidebar-text: #FFFFFF;
+    --color-sidebar-muted: #9CA3AF;
+
+    /* --- Status Dots (3色まで) --- */
+    --color-dot-urgent: #EF4444;
+    --color-dot-important: #F59E0B;
+    --color-dot-other: #9CA3AF;
+
+    /* --- Danger --- */
+    --color-danger: #EF4444;
+
+    /* --- Progress Bar --- */
+    --color-progress-track: #E5E7EB;
+    --color-progress-fill: #3ECF8E;
+
+    /* --- Typography --- */
+    --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-mono: 'SF Mono', 'Fira Code', 'Fira Mono', monospace;
+
+    --font-size-page-title: 24px;
+    --font-size-section-header: 18px;
+    --font-size-section-label: 12px;
+    --font-size-body: 14px;
+    --font-size-table-header: 12px;
+    --font-size-caption: 12px;
+
+    /* --- Spacing --- */
+    --spacing-page-padding: 32px;
+    --spacing-section-gap: 24px;
+    --spacing-card-padding: 16px;
+    --spacing-mobile-padding: 16px;
+
+    /* --- Layout --- */
+    --sidebar-width-open: 220px;
+    --sidebar-width-collapsed: 60px;
+    --table-row-height: 48px;
+    --border-radius: 6px;
+    --mobile-header-height: 56px;
+}
+
+/* --- Base Styles --- */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: var(--font-family);
+    font-size: var(--font-size-body);
+    color: var(--color-text-primary);
+    background-color: var(--color-bg);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* --- Typography Utilities --- */
+.text-page-title {
+    font-size: var(--font-size-page-title);
+    font-weight: 700;
+    color: var(--color-text-primary);
+}
+
+.text-section-header {
+    font-size: var(--font-size-section-header);
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.text-section-label {
+    font-size: var(--font-size-section-label);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-secondary);
+}
+
+.text-body {
+    font-size: var(--font-size-body);
+    color: var(--color-text-primary);
+}
+
+.text-secondary {
+    font-size: var(--font-size-body);
+    color: var(--color-text-secondary);
+}
+
+.text-caption {
+    font-size: var(--font-size-caption);
+    color: var(--color-text-tertiary);
+}
+
+.text-mono {
+    font-family: var(--font-mono);
+}
+
+.text-link {
+    color: var(--color-brand);
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.text-link:hover {
+    text-decoration: underline;
+}
+
+/* --- Button Styles --- */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: var(--border-radius);
+    font-size: var(--font-size-body);
+    font-family: var(--font-family);
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+    border: none;
+}
+
+.btn-primary {
+    background-color: var(--color-brand);
+    color: #FFFFFF;
+}
+
+.btn-primary:hover {
+    background-color: var(--color-brand-hover);
+}
+
+.btn-secondary {
+    background-color: var(--color-bg);
+    color: var(--color-text-primary);
+    border: 1px solid var(--color-border);
+}
+
+.btn-secondary:hover {
+    background-color: var(--color-surface);
+}
+
+.btn-outline {
+    background-color: transparent;
+    color: var(--color-text-secondary);
+    border: 1px solid var(--color-border);
+}
+
+.btn-outline:hover {
+    background-color: var(--color-surface);
+}
+
+.btn-danger {
+    background-color: var(--color-danger);
+    color: #FFFFFF;
+}
+
+.btn-danger:hover {
+    background-color: #DC2626;
+}
+
+/* --- Priority Dots --- */
+.dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.dot-urgent {
+    background-color: var(--color-dot-urgent);
+}
+
+.dot-important {
+    background-color: var(--color-dot-important);
+}
+
+.dot-other {
+    background-color: var(--color-dot-other);
+}
+
+.dot-success {
+    background-color: var(--color-brand);
+}
+
+/* --- Progress Bar --- */
+.progress-bar {
+    width: 100%;
+    height: 4px;
+    background-color: var(--color-progress-track);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background-color: var(--color-progress-fill);
+    border-radius: 2px;
+    transition: width 0.3s ease;
+}
