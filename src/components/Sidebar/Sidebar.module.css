@@ -1,0 +1,303 @@
+/* ============================================
+   Sidebar Styles
+   ============================================ */
+
+/* Desktop Sidebar */
+.sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: var(--sidebar-width-open);
+    height: 100vh;
+    background-color: var(--color-sidebar-bg);
+    display: flex;
+    flex-direction: column;
+    z-index: 100;
+    transition: width 0.2s ease;
+}
+
+.sidebar.collapsed {
+    width: var(--sidebar-width-collapsed);
+}
+
+.logoArea {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 20px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background-color: var(--color-brand);
+    color: #fff;
+    font-weight: 700;
+    font-size: 16px;
+    border-radius: 6px;
+    flex-shrink: 0;
+}
+
+.logoText {
+    color: var(--color-sidebar-text);
+    font-weight: 600;
+    font-size: 16px;
+}
+
+.collapseBtn {
+    margin-left: auto;
+    background: none;
+    border: none;
+    color: var(--color-sidebar-muted);
+    cursor: pointer;
+    font-size: 14px;
+    padding: 4px;
+}
+
+.collapseBtn:hover {
+    color: var(--color-sidebar-text);
+}
+
+/* Navigation */
+.nav {
+    flex: 1;
+    padding: 12px 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.navItem {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 6px;
+    color: var(--color-sidebar-muted);
+    font-size: 14px;
+    transition: background-color 0.15s ease, color 0.15s ease;
+    text-decoration: none;
+    cursor: pointer;
+    position: relative;
+}
+
+.navItem:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: var(--color-sidebar-text);
+}
+
+.navItem.active {
+    background-color: var(--color-sidebar-active);
+    color: var(--color-sidebar-text);
+}
+
+.navItem.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 4px;
+    bottom: 4px;
+    width: 2px;
+    background-color: var(--color-brand);
+    border-radius: 1px;
+}
+
+.navIcon {
+    font-size: 16px;
+    width: 20px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.navLabel {
+    white-space: nowrap;
+}
+
+/* User Area */
+.userArea {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.userAvatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    background-color: var(--color-sidebar-active);
+    color: var(--color-sidebar-text);
+    font-weight: 600;
+    font-size: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.userName {
+    color: var(--color-sidebar-text);
+    font-size: 14px;
+}
+
+/* ============================================
+   Mobile Header
+   ============================================ */
+.mobileHeader {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: var(--mobile-header-height);
+    background-color: var(--color-sidebar-bg);
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    z-index: 100;
+}
+
+.mobileLogo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    background-color: var(--color-brand);
+    color: #fff;
+    font-weight: 700;
+    font-size: 14px;
+    border-radius: 6px;
+}
+
+.mobileTitle {
+    color: #fff;
+    font-weight: 600;
+    font-size: 16px;
+}
+
+.hamburger {
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 4px;
+}
+
+/* ============================================
+   Mobile Slide Menu (Right Side)
+   ============================================ */
+.overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 200;
+}
+
+.slideMenu {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 280px;
+    height: 100vh;
+    background-color: #fff;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    animation: slideIn 0.25s ease;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+    }
+
+    to {
+        transform: translateX(0);
+    }
+}
+
+.closeBtn {
+    align-self: flex-end;
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    color: var(--color-text-secondary);
+    padding: 4px 8px;
+}
+
+.slideNav {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: 16px;
+}
+
+.slideNavItem {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border-radius: 6px;
+    color: var(--color-text-secondary);
+    font-size: 15px;
+    text-decoration: none;
+    transition: background-color 0.15s ease;
+}
+
+.slideNavItem:hover {
+    background-color: var(--color-surface);
+}
+
+.slideNavItem.active {
+    color: var(--color-text-primary);
+    font-weight: 600;
+    position: relative;
+}
+
+.slideNavItem.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 6px;
+    bottom: 6px;
+    width: 2px;
+    background-color: var(--color-brand);
+    border-radius: 1px;
+}
+
+.slideUser {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 16px 0;
+    border-top: 1px solid var(--color-border);
+    color: var(--color-text-primary);
+    font-size: 14px;
+}
+
+/* ============================================
+   Responsive
+   ============================================ */
+@media (max-width: 768px) {
+    .sidebar {
+        display: none;
+    }
+
+    .mobileHeader {
+        display: flex;
+    }
+
+    .overlay {
+        display: block;
+    }
+}

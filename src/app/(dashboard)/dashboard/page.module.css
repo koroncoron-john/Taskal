@@ -1,0 +1,163 @@
+.dashboard {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-section-gap);
+}
+
+/* Greeting */
+.greeting {
+    margin-bottom: 8px;
+}
+
+.greetingText {
+    font-size: var(--font-size-body);
+    color: var(--color-text-secondary);
+    margin-bottom: 4px;
+}
+
+.date {
+    font-size: var(--font-size-page-title);
+    font-weight: 700;
+    color: var(--color-text-primary);
+}
+
+/* Card */
+.card {
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    padding: var(--spacing-card-padding);
+}
+
+.sectionTitle {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    margin-bottom: 16px;
+}
+
+/* Task List */
+.taskList {
+    display: flex;
+    flex-direction: column;
+}
+
+.taskRow {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--color-border-light);
+}
+
+.taskRow:last-child {
+    border-bottom: none;
+}
+
+.checkbox {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    accent-color: var(--color-brand);
+    cursor: pointer;
+}
+
+.taskName {
+    flex: 1;
+    font-size: var(--font-size-body);
+    color: var(--color-text-primary);
+}
+
+.taskMeta {
+    display: flex;
+    gap: 12px;
+    font-size: var(--font-size-caption);
+    color: var(--color-text-tertiary);
+}
+
+/* Two Column */
+.twoCol {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-section-gap);
+}
+
+/* Projects */
+.projectList {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.projectRow {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.projectInfo {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.projectName {
+    font-size: var(--font-size-body);
+    color: var(--color-text-primary);
+}
+
+/* Matrix */
+.matrix {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+}
+
+.matrixCell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    border: 1px solid var(--color-border-light);
+}
+
+.matrixCell:nth-child(1) {
+    border-radius: 6px 0 0 0;
+}
+
+.matrixCell:nth-child(2) {
+    border-radius: 0 6px 0 0;
+}
+
+.matrixCell:nth-child(3) {
+    border-radius: 0 0 0 6px;
+}
+
+.matrixCell:nth-child(4) {
+    border-radius: 0 0 6px 0;
+}
+
+.matrixLabel {
+    font-size: var(--font-size-caption);
+    color: var(--color-text-secondary);
+    margin-bottom: 4px;
+}
+
+.matrixCount {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--color-text-primary);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .twoCol {
+        grid-template-columns: 1fr;
+    }
+
+    .taskMeta {
+        flex-direction: column;
+        gap: 2px;
+        align-items: flex-end;
+    }
+}
