@@ -109,3 +109,74 @@
         flex-wrap: wrap;
     }
 }
+
+/* Matrix View */
+.matrix {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-section-gap);
+    margin-top: 16px;
+}
+
+.matrixQuadrant {
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    padding: var(--spacing-card-padding);
+    background: var(--color-bg);
+}
+
+.quadrantHeader {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.quadrantList {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.matrixTaskItem {
+    padding: 12px;
+    border: 1px solid var(--color-border-light);
+    border-radius: 6px;
+    background: var(--color-surface);
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    cursor: pointer;
+    transition: border-color 0.15s ease;
+}
+
+.matrixTaskItem:hover {
+    border-color: var(--color-border);
+}
+
+.matrixTaskInfo {
+    flex: 1;
+}
+
+.matrixTaskTitle {
+    font-size: var(--font-size-body);
+    font-weight: 500;
+    color: var(--color-text-primary);
+    margin-bottom: 4px;
+}
+
+.matrixTaskMeta {
+    font-size: var(--font-size-caption);
+    color: var(--color-text-tertiary);
+    display: flex;
+    gap: 8px;
+}
+
+@media (max-width: 768px) {
+    .matrix {
+        grid-template-columns: 1fr;
+    }
+}
