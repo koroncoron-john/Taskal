@@ -124,6 +124,13 @@
     gap: 10px;
     padding: 16px;
     border-top: 1px solid rgba(255, 255, 255, 0.08);
+    position: relative;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.userArea:hover {
+    background-color: rgba(255, 255, 255, 0.05);
 }
 
 .userAvatar {
@@ -143,6 +150,45 @@
 .userName {
     color: var(--color-sidebar-text);
     font-size: 14px;
+}
+
+/* User Menu Popover */
+.userMenu {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 16px;
+    width: 200px;
+    background-color: var(--color-sidebar-active);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+    z-index: 101;
+}
+
+.userMenuItem {
+    text-align: left;
+    padding: 8px 10px;
+    border: none;
+    background: none;
+    color: var(--color-sidebar-text);
+    font-size: 13px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.userMenuItem:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.userMenuDivider {
+    height: 1px;
+    background-color: rgba(255, 255, 255, 0.08);
+    margin: 4px 0;
 }
 
 /* ============================================

@@ -95,17 +95,6 @@
     background: var(--color-bg);
 }
 
-.select {
-    width: 100%;
-    padding: 8px 12px;
-    border: 1px solid var(--color-border);
-    border-radius: 4px;
-    font-family: var(--font-family);
-    font-size: var(--font-size-body);
-    color: var(--color-text-primary);
-    background: var(--color-bg);
-    cursor: pointer;
-}
 
 /* Stepper */
 .stepper {

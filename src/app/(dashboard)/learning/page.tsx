@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import styles from './page.module.css'
+import SlidePanel from '../../../components/SlidePanel/SlidePanel'
 
 const categories = [
     { id: '1', name: 'プログラミング' },
@@ -21,6 +22,14 @@ export default function LearningPage() {
     const [selectedCat, setSelectedCat] = useState<string | null>(null)
     const filtered = selectedCat ? notesData.filter(n => n.categoryId === selectedCat) : notesData
 
+    const [isPanelOpen, setIsPanelOpen] = useState(false)
+    const [panelTitle, setPanelTitle] = useState('')
+
+    const openPanel = (title: string) => {
+        setPanelTitle(title)
+        setIsPanelOpen(true)
+    }
+
     return (
         <div>
             <div className={styles.header}>
@@ -28,7 +37,7 @@ export default function LearningPage() {
                     <h1 className="text-page-title">Learning</h1>
                     <p className="text-secondary">学びたいこと・学んだことのアウトプット記録</p>
                 </div>
-                <button className="btn btn-primary">＋ New Note</button>
+                <button className="btn btn-primary" onClick={() => openPanel('Create New Note')}>＋ New Note</button>
             </div>
 
             <div className={styles.categories}>
@@ -47,7 +56,7 @@ export default function LearningPage() {
 
             <div className={styles.noteGrid}>
                 {filtered.map(note => (
-                    <div key={note.id} className={styles.noteCard}>
+                    <div key={note.id} className={styles.noteCard} style={{ cursor: 'pointer' }} onClick={() => openPanel(`Edit: ${note.title}`)}>
                         <div className={styles.noteHeader}>
                             <span className={`dot ${note.status === 'completed' ? 'dot-success' : 'dot-important'}`} />
                             <span className={styles.noteStatus}>{note.status === 'completed' ? '完了' : '学習中'}</span>
@@ -63,6 +72,27 @@ export default function LearningPage() {
                     </div>
                 ))}
             </div>
+
+            <SlidePanel isOpen={isPanelOpen} onClose={() => setIsPanelOpen(false)} title={panelTitle}>
+                <p className="text-secondary" style={{ marginBottom: 24 }}>ノートの作成・編集とAIフィードバックの確認エリア（モック）。</p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                    <div>
+                        <label className="text-section-label">Note Title</label>
+                        <input type="text" className="select" defaultValue={panelTitle.replace('Edit: ', '')} style={{ backgroundImage: 'none', cursor: 'text' }} />
+                    </div>
+                    <div>
+                        <label className="text-section-label">Category</label>
+                        <select className="select">
+                            {categories.map(c => <option key={c.id}>{c.name}</option>)}
+                        </select>
+                    </div>
+                    <div>
+                        <label className="text-section-label">Content</label>
+                        <textarea className="select" rows={5} style={{ backgroundImage: 'none', cursor: 'text', height: 'auto', resize: 'vertical' }}></textarea>
+                    </div>
+                    <button className="btn btn-primary" style={{ marginTop: 16, width: 'fit-content' }}>Save changes</button>
+                </div>
+            </SlidePanel>
         </div>
     )
 }

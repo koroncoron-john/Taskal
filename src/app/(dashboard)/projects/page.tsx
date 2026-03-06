@@ -58,14 +58,18 @@ export default function ProjectsPage() {
                         <h2 className="text-section-header">基本情報</h2>
                         <div className={styles.formGrid}>
                             <label>Project Name</label><div className={styles.fieldValue}>{selected.name}</div>
-                            <label>Client</label><div className={styles.fieldValue}>{selected.client} ▾</div>
+                            <label>Client</label>
+                            <select className="select" defaultValue={selected.client}>
+                                <option value="A社">A社</option>
+                                <option value="B社">B社</option>
+                                <option value="C社">C社</option>
+                                <option value="D社">D社</option>
+                            </select>
                             <label>PM</label><div className={styles.fieldValue}>{selected.pm}</div>
                             <label>Status</label>
-                            <div className={styles.fieldValue}>
-                                <select className={styles.select} defaultValue={selected.phase}>
-                                    {phases.map(p => <option key={p.key} value={p.key}>{p.label}</option>)}
-                                </select>
-                            </div>
+                            <select className="select" defaultValue={selected.phase}>
+                                {phases.map(p => <option key={p.key} value={p.key}>{p.label}</option>)}
+                            </select>
                             <label>Budget</label><div className={`${styles.fieldValue} text-mono`}>¥{selected.budget?.toLocaleString() || '—'}</div>
                             <label>Deadline</label><div className={`${styles.fieldValue} text-mono`}>{selected.deadline || '—'}</div>
                         </div>

@@ -58,6 +58,7 @@ export default function Sidebar() {
     const pathname = usePathname()
     const [collapsed, setCollapsed] = useState(false)
     const [mobileOpen, setMobileOpen] = useState(false)
+    const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
 
     return (
         <>
@@ -92,9 +93,17 @@ export default function Sidebar() {
                     ))}
                 </nav>
 
-                <div className={styles.userArea}>
+                <div className={styles.userArea} onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}>
                     <span className={styles.userAvatar}>J</span>
                     {!collapsed && <span className={styles.userName}>Jon</span>}
+                    {isUserMenuOpen && (
+                        <div className={styles.userMenu}>
+                            <button className={styles.userMenuItem}>Profile Settings</button>
+                            <button className={styles.userMenuItem}>Billing</button>
+                            <div className={styles.userMenuDivider} />
+                            <button className={styles.userMenuItem} style={{ color: 'var(--color-danger)' }}>Log out</button>
+                        </div>
+                    )}
                 </div>
             </aside>
 
