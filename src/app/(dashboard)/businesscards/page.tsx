@@ -26,6 +26,10 @@ export default function BusinessCardsPage() {
     const [importResult, setImportResult] = useState<string | null>(null)
     const csvInputRef = useRef<HTMLInputElement>(null)
 
+    // Filter & Sort
+    const [filterStatus, setFilterStatus] = useState<'All' | 'Met' | 'Not Met'>('All')
+    const [sortKey, setSortKey] = useState<'newest' | 'oldest' | 'affinity_high' | 'affinity_low'>('newest')
+
     const fetchCards = useCallback(async () => {
         setLoading(true)
         const { data } = await supabase.from('business_cards').select('*').order('created_at', { ascending: false })
@@ -132,6 +136,18 @@ export default function BusinessCardsPage() {
     }
 
     const affinityColor = (a: string) => a === '高' ? 'var(--color-brand)' : a === '低' ? 'var(--color-text-tertiary)' : 'var(--color-text-secondary)'
+    const affinityOrder = (a: string) => a === '高' ? 3 : a === '普通' ? 2 : 1
+
+    // フィルタ & ソート適用
+    const filteredCards = cards
+        .filter(c => filterStatus === 'All' || (c as any).meet_status === filterStatus)
+        .sort((a, b) => {
+            if (sortKey === 'newest') return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
+            if (sortKey === 'oldest') return new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime()
+            if (sortKey === 'affinity_high') return affinityOrder(b.affinity) - affinityOrder(a.affinity)
+            if (sortKey === 'affinity_low') return affinityOrder(a.affinity) - affinityOrder(b.affinity)
+            return 0
+        })
 
     return (
         <div>
@@ -154,13 +170,31 @@ export default function BusinessCardsPage() {
                 </div>
             )}
 
+            {/* Filter & Sort bar */}
+            <div style={{ display: 'flex', gap: 12, padding: '0 0 16px', flexWrap: 'wrap', alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: 4 }}>
+                    {(['All', 'Met', 'Not Met'] as const).map(s => (
+                        <button key={s} className={`btn ${filterStatus === s ? 'btn-primary' : 'btn-outline'}`}
+                            style={{ padding: '4px 14px', fontSize: 13 }}
+                            onClick={() => setFilterStatus(s)}>{s}</button>
+                    ))}
+                </div>
+                <select className="select" value={sortKey} onChange={e => setSortKey(e.target.value as any)}
+                    style={{ width: 'auto', padding: '4px 32px 4px 10px', fontSize: 13 }}>
+                    <option value="newest">登録日: 新しい順</option>
+                    <option value="oldest">登録日: 古い順</option>
+                    <option value="affinity_high">Affinity: 高→低</option>
+                    <option value="affinity_low">Affinity: 低→高</option>
+                </select>
+            </div>
+
             {loading ? <p className="text-secondary" style={{ padding: 24 }}>読み込み中...</p> : (
                 <><div className={styles.tableWrap}><table className={styles.table}>
                     <thead><tr>
                         <th className={styles.thCheck}><input type="checkbox" className="checkbox" /></th>
                         <th>Name</th><th>Company</th><th>Role</th><th>Email</th><th>Status</th><th>Registered</th><th>Affinity</th>
                     </tr></thead>
-                    <tbody>{cards.map(c => (
+                    <tbody>{filteredCards.map(c => (
                         <tr key={c.id}>
                             <td className={styles.tdCheck}><input type="checkbox" className="checkbox" /></td>
                             <td className={styles.tdName}><span className="text-link" onClick={() => openEdit(c)}>{c.name}</span></td>
@@ -179,7 +213,7 @@ export default function BusinessCardsPage() {
                             <td className="text-mono text-secondary" style={{ fontSize: 12 }}>{(c as any).registered_date || '—'}</td>
                             <td style={{ color: affinityColor(c.affinity), fontWeight: 600 }}>{c.affinity}</td>
                         </tr>
-                    ))}</tbody></table></div><div className={styles.pagination}>{cards.length} contacts</div></>
+                    ))}</tbody></table></div><div className={styles.pagination}>{filteredCards.length} / {cards.length} contacts</div></>
             )}
 
             <SlidePanel isOpen={isPanelOpen} onClose={() => setIsPanelOpen(false)} title={panelMode === 'create' ? 'New Contact' : 'Edit Contact'}>
