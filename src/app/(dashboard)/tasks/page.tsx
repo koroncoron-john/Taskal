@@ -124,7 +124,11 @@ export default function TasksPage() {
                                 <td className="text-mono text-secondary">{t.due || '—'}</td>
                                 <td>{t.status}</td>
                             </tr>
-                        ))}</tbody>
+                        ))}
+                            {tasks.length === 0 && (
+                                <tr><td colSpan={6} style={{ textAlign: 'center', padding: '48px 24px', color: 'var(--color-text-tertiary)', fontSize: 14 }}>No data matching your filter criteria.</td></tr>
+                            )}
+                        </tbody>
                     </table></div>
                     <div className={styles.pagination}>{tasks.length} tasks</div>
                 </>

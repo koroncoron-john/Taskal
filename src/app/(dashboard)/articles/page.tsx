@@ -189,7 +189,11 @@ export default function ArticlesPage() {
                             <td>{a.status}</td>
                             <td className="text-mono text-secondary">{a.month || '—'}</td>
                         </tr>
-                    ))}</tbody></table></div><div className={styles.pagination}>{articles.length} articles</div></>
+                    ))}
+                        {articles.length === 0 && (
+                            <tr><td colSpan={6} style={{ textAlign: 'center', padding: '48px 24px', color: 'var(--color-text-tertiary)', fontSize: 14 }}>No data matching your filter criteria.</td></tr>
+                        )}
+                    </tbody></table></div><div className={styles.pagination}>{articles.length} articles</div></>
             )}
             <SlidePanel isOpen={isPanelOpen} onClose={() => setIsPanelOpen(false)} title={panelMode === 'create' ? 'New Article' : 'Edit Article'}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>

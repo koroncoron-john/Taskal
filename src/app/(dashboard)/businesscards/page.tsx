@@ -206,7 +206,11 @@ export default function BusinessCardsPage() {
                             <td className="text-mono text-secondary" style={{ fontSize: 12 }}>{(c as any).registered_date || '—'}</td>
                             <td style={{ color: affinityColor(c.affinity), fontWeight: 600 }}>{c.affinity}</td>
                         </tr>
-                    ))}</tbody></table></div><div className={styles.pagination}>{filteredCards.length} / {cards.length} contacts</div></>
+                    ))}
+                        {filteredCards.length === 0 && (
+                            <tr><td colSpan={8} style={{ textAlign: 'center', padding: '48px 24px', color: 'var(--color-text-tertiary)', fontSize: 14 }}>No data matching your filter criteria.</td></tr>
+                        )}
+                    </tbody></table></div><div className={styles.pagination}>{filteredCards.length} / {cards.length} contacts</div></>
             )}
 
             <SlidePanel isOpen={isPanelOpen} onClose={() => setIsPanelOpen(false)} title={panelMode === 'create' ? 'New Contact' : 'Edit Contact'}>

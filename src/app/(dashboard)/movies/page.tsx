@@ -94,7 +94,11 @@ export default function MoviesPage() {
                             ) : <span className="text-secondary">—</span>}</td>
                             <td>{v.status}</td>
                         </tr>
-                    ))}</tbody></table></div><div className={styles.pagination}>{movies.length} videos</div></>
+                    ))}
+                        {movies.length === 0 && (
+                            <tr><td colSpan={4} style={{ textAlign: 'center', padding: '48px 24px', color: 'var(--color-text-tertiary)', fontSize: 14 }}>No data matching your filter criteria.</td></tr>
+                        )}
+                    </tbody></table></div><div className={styles.pagination}>{movies.length} videos</div></>
             )}
             <SlidePanel isOpen={isPanelOpen} onClose={() => setIsPanelOpen(false)} title={panelMode === 'create' ? 'New Video' : 'Edit Video'}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
