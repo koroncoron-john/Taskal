@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import styles from './page.module.css'
+import DateInput from '../../../components/DateInput/DateInput'
 import { createClient } from '../../../lib/supabase/client'
 import type { Project } from '../../../types/database'
 
@@ -136,7 +137,7 @@ export default function ProjectsPage() {
                                     <label>Budget</label>
                                     <input type="number" className="select" value={formBudget} onChange={e => setFormBudget(Number(e.target.value))} style={{ backgroundImage: 'none', cursor: 'text' }} />
                                     <label>Deadline</label>
-                                    <input type="date" className="select" value={formDeadline} onChange={e => setFormDeadline(e.target.value)} style={{ backgroundImage: 'none', cursor: 'text' }} />
+                                    <DateInput value={formDeadline} onChange={setFormDeadline} />
                                     <label>Active</label>
                                     <select className="select" value={formIsActive ? 'active' : 'inactive'} onChange={e => setFormIsActive(e.target.value === 'active')}>
                                         <option value="active">Active</option>

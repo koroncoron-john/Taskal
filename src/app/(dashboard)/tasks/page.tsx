@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import styles from './page.module.css'
 import SlidePanel from '../../../components/SlidePanel/SlidePanel'
+import DateInput from '../../../components/DateInput/DateInput'
 import { createClient } from '../../../lib/supabase/client'
 import type { Task } from '../../../types/database'
 
@@ -145,7 +146,7 @@ export default function TasksPage() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                     <div><label className="text-section-label">Task Name</label><input type="text" className="select" value={formTitle} onChange={e => setFormTitle(e.target.value)} style={{ backgroundImage: 'none', cursor: 'text' }} /></div>
                     <div><label className="text-section-label">Priority</label><select className="select" value={formPriority} onChange={e => setFormPriority(e.target.value as Task['priority'])}><option value="urgent_important">緊急×重要 (Q1)</option><option value="important">重要 (Q2)</option><option value="urgent">緊急 (Q3)</option><option value="other">その他 (Q4)</option></select></div>
-                    <div><label className="text-section-label">Due Date</label><input type="date" className="select" value={formDue} onChange={e => setFormDue(e.target.value)} style={{ backgroundImage: 'none', cursor: 'text' }} /></div>
+                    <div><label className="text-section-label">Due Date</label><DateInput value={formDue} onChange={setFormDue} /></div>
                     <div><label className="text-section-label">Project</label><input type="text" className="select" value={formProject} onChange={e => setFormProject(e.target.value)} style={{ backgroundImage: 'none', cursor: 'text' }} /></div>
                     <div><label className="text-section-label">Status</label><select className="select" value={formStatus} onChange={e => setFormStatus(e.target.value as Task['status'])}><option value="未着手">未着手</option><option value="進行中">進行中</option><option value="下書き">下書き</option><option value="アイデア">アイデア</option><option value="完了">完了</option></select></div>
                     <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>

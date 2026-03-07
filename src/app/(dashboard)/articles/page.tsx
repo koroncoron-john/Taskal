@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import styles from '../tasks/page.module.css'
 import SlidePanel from '../../../components/SlidePanel/SlidePanel'
+import DateInput from '../../../components/DateInput/DateInput'
 import { createClient } from '../../../lib/supabase/client'
 import type { Article } from '../../../types/database'
 
@@ -85,7 +86,7 @@ export default function ArticlesPage() {
                     <div><label className="text-section-label">Title</label><input type="text" className="select" value={formTitle} onChange={e => setFormTitle(e.target.value)} style={{ backgroundImage: 'none', cursor: 'text' }} /></div>
                     <div><label className="text-section-label">Platform</label><select className="select" value={formPlatform} onChange={e => setFormPlatform(e.target.value)}><option>note</option><option>自社サイト</option><option>X</option></select></div>
                     <div><label className="text-section-label">Status</label><select className="select" value={formStatus} onChange={e => setFormStatus(e.target.value as Article['status'])}><option>アイデア</option><option>下書き</option><option>投稿済み</option></select></div>
-                    <div><label className="text-section-label">Month</label><input type="month" className="select" value={formMonth} onChange={e => setFormMonth(e.target.value)} style={{ backgroundImage: 'none', cursor: 'text' }} /></div>
+                    <div><label className="text-section-label">Month</label><DateInput value={formMonth} onChange={setFormMonth} type="month" placeholder="月を選択" /></div>
                     <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
                         <button className="btn btn-primary" onClick={handleSave}>Save</button>
                         {panelMode === 'edit' && <button className="btn btn-outline" style={{ color: 'var(--color-danger)', borderColor: 'var(--color-danger)' }} onClick={handleDelete}>Delete</button>}
