@@ -203,7 +203,7 @@ export default function BusinessCardsPage() {
                                     {(c as any).meet_status || 'Not Met'}
                                 </span>
                             </td>
-                            <td className="text-mono text-secondary" style={{ fontSize: 12 }}>{(c as any).registered_date || '—'}</td>
+                            <td className="text-mono text-secondary" style={{ fontSize: 12 }}>{(c as any).registered_date || (c.created_at ? c.created_at.slice(0, 10) : '—')}</td>
                             <td style={{ color: affinityColor(c.affinity), fontWeight: 600 }}>{c.affinity}</td>
                         </tr>
                     ))}
