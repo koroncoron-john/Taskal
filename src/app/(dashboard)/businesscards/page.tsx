@@ -1,25 +1,45 @@
+'use client'
+
+import { useState, useEffect, useCallback } from 'react'
 import styles from '../tasks/page.module.css'
+import SlidePanel from '../../../components/SlidePanel/SlidePanel'
+import { createClient } from '../../../lib/supabase/client'
+import type { BusinessCard } from '../../../types/database'
 
 export default function BusinessCardsPage() {
-    const contacts = [
-        { id: '1', name: '田中 太郎', company: 'ABC株式会社', industry: 'IT/SaaS', occasion: '会食', location: '渋谷・イタリアン', date: '2026/02/28', affinity: 'high', notes: 'AI開発に興味あり' },
-        { id: '2', name: '佐藤 花子', company: 'DEFデザイン', industry: 'デザイン', occasion: 'イベント', location: '渋谷ヒカリエ', date: '2026/02/15', affinity: 'medium', notes: 'LPデザイン相談可能' },
-        { id: '3', name: '山田 健一', company: 'GHI不動産', industry: '不動産', occasion: '紹介', location: 'オンライン', date: '2026/01/20', affinity: 'low', notes: '不動産テック検討中' },
-        { id: '4', name: '鈴木 美咲', company: 'JKLメディア', industry: 'メディア', occasion: '会食', location: '六本木・和食', date: '2026/03/01', affinity: 'high', notes: 'コラボ動画提案' },
-        { id: '5', name: '高橋 一郎', company: 'MNO商事', industry: '商社', occasion: 'イベント', location: 'ビッグサイト', date: '2026/02/10', affinity: 'medium', notes: '海外展開の相談' },
-    ]
+    const supabase = createClient()
+    const [cards, setCards] = useState<BusinessCard[]>([])
+    const [loading, setLoading] = useState(true)
+    const [isPanelOpen, setIsPanelOpen] = useState(false)
+    const [panelMode, setPanelMode] = useState<'create' | 'edit'>('create')
+    const [editing, setEditing] = useState<BusinessCard | null>(null)
+    const [formName, setFormName] = useState('')
+    const [formCompany, setFormCompany] = useState('')
+    const [formRole, setFormRole] = useState('')
+    const [formEmail, setFormEmail] = useState('')
+    const [formPhone, setFormPhone] = useState('')
+    const [formAffinity, setFormAffinity] = useState<BusinessCard['affinity']>('普通')
 
-    const affinityStyle = (a: string) => {
-        if (a === 'high') return { color: 'var(--color-brand)' }
-        if (a === 'low') return { color: 'var(--color-text-tertiary)' }
-        return {}
-    }
+    const fetchCards = useCallback(async () => {
+        setLoading(true)
+        const { data } = await supabase.from('business_cards').select('*').order('created_at', { ascending: false })
+        setCards(data || [])
+        setLoading(false)
+    }, [])
 
-    const affinityLabel = (a: string) => {
-        if (a === 'high') return '高'
-        if (a === 'medium') return '中'
-        return '低'
+    useEffect(() => { fetchCards() }, [fetchCards])
+
+    const openCreate = () => { setPanelMode('create'); setEditing(null); setFormName(''); setFormCompany(''); setFormRole(''); setFormEmail(''); setFormPhone(''); setFormAffinity('普通'); setIsPanelOpen(true) }
+    const openEdit = (c: BusinessCard) => { setPanelMode('edit'); setEditing(c); setFormName(c.name); setFormCompany(c.company); setFormRole(c.role); setFormEmail(c.email); setFormPhone(c.phone); setFormAffinity(c.affinity); setIsPanelOpen(true) }
+
+    const handleSave = async () => {
+        const p = { name: formName, company: formCompany, role: formRole, email: formEmail, phone: formPhone, affinity: formAffinity }
+        if (panelMode === 'create') { await supabase.from('business_cards').insert(p) } else if (editing) { await supabase.from('business_cards').update(p).eq('id', editing.id) }
+        setIsPanelOpen(false); fetchCards()
     }
+    const handleDelete = async () => { if (!editing) return; await supabase.from('business_cards').delete().eq('id', editing.id); setIsPanelOpen(false); fetchCards() }
+
+    const affinityColor = (a: string) => a === '高' ? 'var(--color-brand)' : a === '低' ? 'var(--color-text-tertiary)' : 'var(--color-text-secondary)'
 
     return (
         <div>
@@ -28,51 +48,37 @@ export default function BusinessCardsPage() {
                 <div className={styles.actions}>
                     <button className="btn btn-outline">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
-                            <polyline points="7 10 12 15 17 10" />
-                            <line x1="12" y1="15" x2="12" y2="3" />
-                        </svg>
-                        CSV Import
+                            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
+                        </svg> CSV Import
                     </button>
-                    <button className="btn btn-outline">Filter</button>
-                    <button className="btn btn-outline">Sort</button>
-                    <button className="btn btn-primary">＋ New Contact</button>
+                    <button className="btn btn-primary" onClick={openCreate}>＋ New Contact</button>
                 </div>
             </div>
-
-            <div className={styles.tableWrap}>
-                <table className={styles.table}>
-                    <thead>
-                        <tr>
-                            <th className={styles.thCheck}><input type="checkbox" /></th>
-                            <th>Name</th>
-                            <th>Company</th>
-                            <th>Industry</th>
-                            <th>Occasion</th>
-                            <th>Location</th>
-                            <th>Date</th>
-                            <th>Affinity</th>
-                            <th>Notes</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {contacts.map((c) => (
-                            <tr key={c.id}>
-                                <td className={styles.tdCheck}><input type="checkbox" /></td>
-                                <td className={styles.tdName}>{c.name}</td>
-                                <td>{c.company}</td>
-                                <td className="text-secondary">{c.industry}</td>
-                                <td className="text-secondary">{c.occasion}</td>
-                                <td className="text-secondary">{c.location}</td>
-                                <td className="text-mono text-secondary">{c.date}</td>
-                                <td style={affinityStyle(c.affinity)}>{affinityLabel(c.affinity)}</td>
-                                <td className="text-secondary">{c.notes}</td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
-            <div className={styles.pagination}>Page 1 of 1 | {contacts.length} contacts</div>
+            {loading ? <p className="text-secondary" style={{ padding: 24 }}>読み込み中...</p> : (
+                <><div className={styles.tableWrap}><table className={styles.table}>
+                    <thead><tr><th className={styles.thCheck}><input type="checkbox" className="checkbox" /></th><th>Name</th><th>Company</th><th>Role</th><th>Email</th><th>Affinity</th></tr></thead>
+                    <tbody>{cards.map(c => (
+                        <tr key={c.id}><td className={styles.tdCheck}><input type="checkbox" className="checkbox" /></td>
+                            <td className={styles.tdName}><span className="text-link" onClick={() => openEdit(c)}>{c.name}</span></td>
+                            <td className="text-secondary">{c.company}</td><td className="text-secondary">{c.role}</td>
+                            <td className="text-secondary">{c.email}</td>
+                            <td style={{ color: affinityColor(c.affinity), fontWeight: 600 }}>{c.affinity}</td></tr>
+                    ))}</tbody></table></div><div className={styles.pagination}>{cards.length} contacts</div></>
+            )}
+            <SlidePanel isOpen={isPanelOpen} onClose={() => setIsPanelOpen(false)} title={panelMode === 'create' ? 'New Contact' : 'Edit Contact'}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                    <div><label className="text-section-label">Name</label><input type="text" className="select" value={formName} onChange={e => setFormName(e.target.value)} style={{ backgroundImage: 'none', cursor: 'text' }} /></div>
+                    <div><label className="text-section-label">Company</label><input type="text" className="select" value={formCompany} onChange={e => setFormCompany(e.target.value)} style={{ backgroundImage: 'none', cursor: 'text' }} /></div>
+                    <div><label className="text-section-label">Role</label><input type="text" className="select" value={formRole} onChange={e => setFormRole(e.target.value)} style={{ backgroundImage: 'none', cursor: 'text' }} /></div>
+                    <div><label className="text-section-label">Email</label><input type="email" className="select" value={formEmail} onChange={e => setFormEmail(e.target.value)} style={{ backgroundImage: 'none', cursor: 'text' }} /></div>
+                    <div><label className="text-section-label">Phone</label><input type="tel" className="select" value={formPhone} onChange={e => setFormPhone(e.target.value)} style={{ backgroundImage: 'none', cursor: 'text' }} /></div>
+                    <div><label className="text-section-label">Affinity</label><select className="select" value={formAffinity} onChange={e => setFormAffinity(e.target.value as BusinessCard['affinity'])}><option>高</option><option>普通</option><option>低</option></select></div>
+                    <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+                        <button className="btn btn-primary" onClick={handleSave}>Save</button>
+                        {panelMode === 'edit' && <button className="btn btn-outline" style={{ color: 'var(--color-danger)', borderColor: 'var(--color-danger)' }} onClick={handleDelete}>Delete</button>}
+                    </div>
+                </div>
+            </SlidePanel>
         </div>
     )
 }
