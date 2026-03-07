@@ -153,7 +153,18 @@ export default function BusinessCardsPage() {
         <div>
             <div className={styles.header}>
                 <h1 className="text-page-title">BusinessCards</h1>
-                <div className={styles.actions}>
+                <div className={styles.actions} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <select className="select" style={{ width: 'auto', paddingRight: '28px' }} value={filterStatus} onChange={e => setFilterStatus(e.target.value as any)}>
+                        <option value="All">Filter: All</option>
+                        <option value="Met">Met</option>
+                        <option value="Not Met">Not Met</option>
+                    </select>
+                    <select className="select" style={{ width: 'auto', paddingRight: '28px' }} value={sortKey} onChange={e => setSortKey(e.target.value as any)}>
+                        <option value="newest">Sort: 新しい順</option>
+                        <option value="oldest">Sort: 古い順</option>
+                        <option value="affinity_high">Affinity: 高→低</option>
+                        <option value="affinity_low">Affinity: 低→高</option>
+                    </select>
                     <button className="btn btn-outline" onClick={() => csvInputRef.current?.click()}>
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
@@ -169,24 +180,6 @@ export default function BusinessCardsPage() {
                     ✅ {importResult}
                 </div>
             )}
-
-            {/* Filter & Sort bar */}
-            <div style={{ display: 'flex', gap: 12, padding: '0 0 16px', flexWrap: 'wrap', alignItems: 'center' }}>
-                <div style={{ display: 'flex', gap: 4 }}>
-                    {(['All', 'Met', 'Not Met'] as const).map(s => (
-                        <button key={s} className={`btn ${filterStatus === s ? 'btn-primary' : 'btn-outline'}`}
-                            style={{ padding: '4px 14px', fontSize: 13 }}
-                            onClick={() => setFilterStatus(s)}>{s}</button>
-                    ))}
-                </div>
-                <select className="select" value={sortKey} onChange={e => setSortKey(e.target.value as any)}
-                    style={{ width: 'auto', padding: '4px 32px 4px 10px', fontSize: 13 }}>
-                    <option value="newest">登録日: 新しい順</option>
-                    <option value="oldest">登録日: 古い順</option>
-                    <option value="affinity_high">Affinity: 高→低</option>
-                    <option value="affinity_low">Affinity: 低→高</option>
-                </select>
-            </div>
 
             {loading ? <p className="text-secondary" style={{ padding: 24 }}>読み込み中...</p> : (
                 <><div className={styles.tableWrap}><table className={styles.table}>
