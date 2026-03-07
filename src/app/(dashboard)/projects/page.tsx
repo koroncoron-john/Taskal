@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import styles from './page.module.css'
-import SlidePanel from '../../../components/SlidePanel/SlidePanel'
 import { createClient } from '../../../lib/supabase/client'
 import type { Project } from '../../../types/database'
 
@@ -17,13 +16,13 @@ export default function ProjectsPage() {
     const [selected, setSelected] = useState<Project | null>(null)
     const [loading, setLoading] = useState(true)
 
-    // フォーム
     const [formName, setFormName] = useState('')
     const [formClient, setFormClient] = useState('')
     const [formPm, setFormPm] = useState('')
     const [formPhase, setFormPhase] = useState<Project['phase']>('提案')
     const [formBudget, setFormBudget] = useState(0)
     const [formDeadline, setFormDeadline] = useState('')
+    const [formIsActive, setFormIsActive] = useState(true)
 
     const fetchProjects = useCallback(async () => {
         setLoading(true)
@@ -46,6 +45,7 @@ export default function ProjectsPage() {
         setFormPhase(p.phase)
         setFormBudget(p.budget)
         setFormDeadline(p.deadline || '')
+        setFormIsActive((p as any).is_active !== false)
     }
 
     const selectProject = (p: Project) => {
@@ -58,15 +58,26 @@ export default function ProjectsPage() {
         await supabase.from('projects').update({
             name: formName, client: formClient, pm: formPm,
             phase: formPhase, budget: formBudget, deadline: formDeadline || null,
+            is_active: formIsActive,
         }).eq('id', selected.id)
-        fetchProjects()
+
+        // 更新後にselectedも更新
+        const { data } = await supabase.from('projects').select('*').order('created_at', { ascending: false })
+        const list = data || []
+        setProjects(list)
+        const updated = list.find((p: any) => p.id === selected.id)
+        if (updated) { setSelected(updated); fillForm(updated) }
     }
 
     const handleCreate = async () => {
-        await supabase.from('projects').insert({ name: 'New Project', client: '', pm: '', phase: '提案', budget: 0 })
-        fetchProjects()
+        const { data } = await supabase.from('projects').insert({ name: 'New Project', client: '', pm: '', phase: '提案', budget: 0, is_active: true }).select().single()
+        const list = await supabase.from('projects').select('*').order('created_at', { ascending: false })
+        setProjects(list.data || [])
+        if (data) { setSelected(data); fillForm(data) }
     }
 
+    const activeProjects = projects.filter((p: any) => p.is_active !== false)
+    const inactiveProjects = projects.filter((p: any) => p.is_active === false)
     const phaseIndex = phases.findIndex(p => p.key === selected?.phase)
 
     return (
@@ -82,50 +93,74 @@ export default function ProjectsPage() {
             {loading ? (
                 <p className="text-secondary" style={{ padding: 24 }}>読み込み中...</p>
             ) : (
-                <div className={styles.twoCol}>
-                    <div className={styles.projectList}>
-                        <div className={styles.listLabel}>ACTIVE</div>
-                        {projects.map(p => (
-                            <div key={p.id} className={`${styles.listItem} ${selected?.id === p.id ? styles.listItemActive : ''}`} onClick={() => selectProject(p)}>
-                                {p.name} - {p.client || '(No client)'}
-                            </div>
-                        ))}
+                <div className={styles.layout}>
+                    <div className={styles.listCol}>
+                        {activeProjects.length > 0 && (
+                            <>
+                                <div className="text-section-label" style={{ padding: '0 16px', marginBottom: 8 }}>ACTIVE</div>
+                                {activeProjects.map(p => (
+                                    <button key={p.id} className={`${styles.listItem} ${selected?.id === p.id ? styles.listItemActive : ''}`} onClick={() => selectProject(p)}>
+                                        {p.name} - {p.client || '(No client)'}
+                                    </button>
+                                ))}
+                            </>
+                        )}
+                        {inactiveProjects.length > 0 && (
+                            <>
+                                <div className="text-section-label" style={{ padding: '16px 16px 8px', borderTop: '1px solid var(--color-border-light)', marginTop: activeProjects.length > 0 ? 8 : 0 }}>INACTIVE</div>
+                                {inactiveProjects.map(p => (
+                                    <button key={p.id} className={`${styles.listItem} ${selected?.id === p.id ? styles.listItemActive : ''}`} onClick={() => selectProject(p)} style={{ opacity: 0.5 }}>
+                                        {p.name} - {p.client || '(No client)'}
+                                    </button>
+                                ))}
+                            </>
+                        )}
                     </div>
                     {selected && (
-                        <div className={styles.detail}>
-                            <h2 className="text-section-header">基本情報</h2>
-                            <div className={styles.formGrid}>
-                                <label>Project Name</label>
-                                <input type="text" className="select" value={formName} onChange={e => setFormName(e.target.value)} style={{ backgroundImage: 'none', cursor: 'text' }} />
-                                <label>Client</label>
-                                <select className="select" value={formClient} onChange={e => setFormClient(e.target.value)}>
-                                    <option value="">（なし）</option><option value="A社">A社</option><option value="B社">B社</option><option value="C社">C社</option><option value="D社">D社</option>
-                                </select>
-                                <label>PM</label>
-                                <input type="text" className="select" value={formPm} onChange={e => setFormPm(e.target.value)} style={{ backgroundImage: 'none', cursor: 'text' }} />
-                                <label>Status</label>
-                                <select className="select" value={formPhase} onChange={e => setFormPhase(e.target.value as Project['phase'])}>
-                                    {phases.map(p => <option key={p.key} value={p.key}>{p.label}</option>)}
-                                </select>
-                                <label>Budget</label>
-                                <input type="number" className="select" value={formBudget} onChange={e => setFormBudget(Number(e.target.value))} style={{ backgroundImage: 'none', cursor: 'text' }} />
-                                <label>Deadline</label>
-                                <input type="date" className="select" value={formDeadline} onChange={e => setFormDeadline(e.target.value)} style={{ backgroundImage: 'none', cursor: 'text' }} />
+                        <div className={styles.detailCol}>
+                            <div className={styles.section}>
+                                <h2 className="text-section-header">基本情報</h2>
+                                <div className={styles.formGrid}>
+                                    <label>Project Name</label>
+                                    <input type="text" className="select" value={formName} onChange={e => setFormName(e.target.value)} style={{ backgroundImage: 'none', cursor: 'text' }} />
+                                    <label>Client</label>
+                                    <select className="select" value={formClient} onChange={e => setFormClient(e.target.value)}>
+                                        <option value="">（なし）</option><option value="A社">A社</option><option value="B社">B社</option><option value="C社">C社</option><option value="D社">D社</option>
+                                    </select>
+                                    <label>PM</label>
+                                    <input type="text" className="select" value={formPm} onChange={e => setFormPm(e.target.value)} style={{ backgroundImage: 'none', cursor: 'text' }} />
+                                    <label>Status</label>
+                                    <select className="select" value={formPhase} onChange={e => setFormPhase(e.target.value as Project['phase'])}>
+                                        {phases.map(p => <option key={p.key} value={p.key}>{p.label}</option>)}
+                                    </select>
+                                    <label>Budget</label>
+                                    <input type="number" className="select" value={formBudget} onChange={e => setFormBudget(Number(e.target.value))} style={{ backgroundImage: 'none', cursor: 'text' }} />
+                                    <label>Deadline</label>
+                                    <input type="date" className="select" value={formDeadline} onChange={e => setFormDeadline(e.target.value)} style={{ backgroundImage: 'none', cursor: 'text' }} />
+                                    <label>Active</label>
+                                    <select className="select" value={formIsActive ? 'active' : 'inactive'} onChange={e => setFormIsActive(e.target.value === 'active')}>
+                                        <option value="active">Active</option>
+                                        <option value="inactive">Inactive</option>
+                                    </select>
+                                </div>
+                                <button className="btn btn-primary" style={{ marginTop: 16 }} onClick={handleSave}>Save changes</button>
                             </div>
-                            <button className="btn btn-primary" style={{ marginTop: 16 }} onClick={handleSave}>Save changes</button>
 
-                            <h2 className="text-section-header" style={{ marginTop: 32 }}>Phase</h2>
-                            <div className={styles.stepper}>
-                                {phases.map((p, i) => (
-                                    <span key={p.key} className={`${styles.step} ${i < phaseIndex ? styles.stepDone : ''} ${i === phaseIndex ? styles.stepCurrent : ''}`}>
-                                        {i < phaseIndex ? '✓' : i === phaseIndex ? '●' : '○'} {p.label}
-                                    </span>
-                                ))}
+                            <div className={styles.section}>
+                                <h2 className="text-section-header">Phase</h2>
+                                <div className={styles.stepper}>
+                                    {phases.map((p, i) => (
+                                        <span key={p.key} className={`${styles.step} ${i < phaseIndex ? styles.stepDone : ''} ${i === phaseIndex ? styles.stepCurrent : ''}`}>
+                                            {i < phaseIndex ? '✓' : i === phaseIndex ? '●' : '○'} {p.label}
+                                        </span>
+                                    ))}
+                                </div>
                             </div>
-                            <p className="text-secondary" style={{ marginTop: 8, fontSize: 12 }}>ステータスはドロップダウンで変更できます</p>
 
-                            <h2 className="text-section-header" style={{ marginTop: 32 }}>Maintenance Timer</h2>
-                            <p className="text-secondary">保守フェーズ時にアクティブになります</p>
+                            <div className={`${styles.section} ${selected?.phase !== '保守' ? styles.disabled : ''}`}>
+                                <h2 className="text-section-header">Maintenance Timer</h2>
+                                <p className="text-secondary">保守フェーズ時にアクティブになります</p>
+                            </div>
                         </div>
                     )}
                 </div>
