@@ -5,12 +5,13 @@ import styles from './page.module.css'
 import SlidePanel from '../../../components/SlidePanel/SlidePanel'
 import DateInput from '../../../components/DateInput/DateInput'
 import { createClient } from '../../../lib/supabase/client'
-import type { Task } from '../../../types/database'
+import type { Task, Project } from '../../../types/database'
 
 export default function TasksPage() {
     const supabase = createClient()
     const [tasks, setTasks] = useState<Task[]>([])
     const [loading, setLoading] = useState(true)
+    const [projectNames, setProjectNames] = useState<string[]>([])
     const [viewMode, setViewMode] = useState<'list' | 'matrix'>('list')
     const [isPanelOpen, setIsPanelOpen] = useState(false)
     const [panelMode, setPanelMode] = useState<'create' | 'edit'>('create')
@@ -38,6 +39,15 @@ export default function TasksPage() {
     }, [filterStatus, sortOrder])
 
     useEffect(() => { fetchTasks() }, [fetchTasks])
+
+    // プロジェクト一覧をfetch
+    useEffect(() => {
+        const fetchProjects = async () => {
+            const { data } = await supabase.from('projects').select('name, client')
+            setProjectNames((data || []).map((p: any) => p.name))
+        }
+        fetchProjects()
+    }, [])
 
 
     const handleCheck = async (taskId: string) => {
@@ -147,7 +157,7 @@ export default function TasksPage() {
                     <div><label className="text-section-label">Task Name</label><input type="text" className="select" value={formTitle} onChange={e => setFormTitle(e.target.value)} style={{ backgroundImage: 'none', cursor: 'text' }} /></div>
                     <div><label className="text-section-label">Priority</label><select className="select" value={formPriority} onChange={e => setFormPriority(e.target.value as Task['priority'])}><option value="urgent_important">緊急×重要 (Q1)</option><option value="important">重要 (Q2)</option><option value="urgent">緊急 (Q3)</option><option value="other">その他 (Q4)</option></select></div>
                     <div><label className="text-section-label">Due Date</label><DateInput value={formDue} onChange={setFormDue} /></div>
-                    <div><label className="text-section-label">Project</label><input type="text" className="select" value={formProject} onChange={e => setFormProject(e.target.value)} style={{ backgroundImage: 'none', cursor: 'text' }} /></div>
+                    <div><label className="text-section-label">Project</label><select className="select" value={formProject} onChange={e => setFormProject(e.target.value)}><option value="">（なし）</option>{projectNames.map(n => <option key={n} value={n}>{n}</option>)}</select></div>
                     <div><label className="text-section-label">Status</label><select className="select" value={formStatus} onChange={e => setFormStatus(e.target.value as Task['status'])}><option value="未着手">未着手</option><option value="進行中">進行中</option><option value="下書き">下書き</option><option value="アイデア">アイデア</option><option value="完了">完了</option></select></div>
                     <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
                         <button className="btn btn-primary" onClick={handleSave}>Save Task</button>
