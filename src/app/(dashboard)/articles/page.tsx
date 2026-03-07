@@ -95,6 +95,10 @@ export default function ArticlesPage() {
 
     const handleSave = async () => {
         setUploading(true)
+
+        // まずサムネイルURLを決定
+        let thumbnailUrl = editing ? ((editing as any).thumbnail_url || '') : ''
+
         const payload: any = {
             title: formTitle,
             description: formDescription,
@@ -112,11 +116,15 @@ export default function ArticlesPage() {
             await supabase.from('articles').update(payload).eq('id', editing.id)
         }
 
+        // サムネイルアップロード
         if (articleId && thumbnailFile) {
             const url = await uploadThumbnail(articleId)
-            if (url) {
-                await supabase.from('articles').update({ thumbnail_url: url }).eq('id', articleId)
-            }
+            if (url) thumbnailUrl = url
+        }
+
+        // thumbnail_urlを保存（新規アップロードまたは既存保持）
+        if (articleId) {
+            await supabase.from('articles').update({ thumbnail_url: thumbnailUrl }).eq('id', articleId)
         }
 
         setUploading(false)
