@@ -54,9 +54,12 @@ const navItems = [
     { href: '/businesscards', label: 'BusinessCards', iconKey: 'businesscards' },
 ]
 
-export default function Sidebar() {
+interface SidebarProps {
+    collapsed: boolean
+}
+
+export default function Sidebar({ collapsed }: SidebarProps) {
     const pathname = usePathname()
-    const [collapsed, setCollapsed] = useState(false)
     const [mobileOpen, setMobileOpen] = useState(false)
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
 
@@ -64,22 +67,9 @@ export default function Sidebar() {
         <>
             {/* Desktop Sidebar */}
             <aside className={`${styles.sidebar} ${collapsed ? styles.collapsed : ''}`}>
-                <div className={styles.topArea}>
-                    <div className={styles.logoArea}>
-                        <span className={styles.logo}>T</span>
-                        {!collapsed && <span className={styles.logoText}>Taskal</span>}
-                    </div>
-                    <button
-                        className={styles.collapseBtn}
-                        onClick={() => setCollapsed(!collapsed)}
-                        aria-label="Toggle sidebar"
-                    >
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={collapsed ? { transform: 'scaleX(-1)' } : {}}>
-                            <rect x="3" y="3" width="18" height="18" rx="2" />
-                            <line x1="9" y1="3" x2="9" y2="21" />
-                            <polyline points="15 8 12 12 15 16" />
-                        </svg>
-                    </button>
+                <div className={styles.logoArea}>
+                    <span className={styles.logo}>T</span>
+                    {!collapsed && <span className={styles.logoText}>Taskal</span>}
                 </div>
 
                 <nav className={styles.nav}>
@@ -159,3 +149,4 @@ export default function Sidebar() {
         </>
     )
 }
+
