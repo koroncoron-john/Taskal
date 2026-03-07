@@ -153,6 +153,14 @@ export default function ProjectsPage() {
         if (data) { setSelected(data); fillForm(data) }
     }
 
+    const handleDelete = async () => {
+        if (!selected) return
+        if (!confirm(`"${selected.name}" を完全に削除しますか？\nこの操作は取り消せません。`)) return
+        await supabase.from('projects').delete().eq('id', selected.id)
+        setSelected(null)
+        fetchProjects()
+    }
+
     // タイマー記録を保存
     const handleSaveLog = async () => {
         if (!selected || timerSeconds === 0) return
@@ -258,7 +266,10 @@ export default function ProjectsPage() {
                                         <option value="inactive">Inactive</option>
                                     </select>
                                 </div>
-                                <button className="btn btn-primary" style={{ marginTop: 16 }} onClick={handleSave}>Save changes</button>
+                                <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+                                    <button className="btn btn-primary" onClick={handleSave}>Save changes</button>
+                                    <button className="btn btn-outline" style={{ color: 'var(--color-danger)', borderColor: 'var(--color-danger)' }} onClick={handleDelete}>Delete</button>
+                                </div>
                             </div>
 
                             <div className={styles.section}>
