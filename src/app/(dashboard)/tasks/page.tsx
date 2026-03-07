@@ -14,7 +14,7 @@ export default function TasksPage() {
     const [isPanelOpen, setIsPanelOpen] = useState(false)
     const [panelMode, setPanelMode] = useState<'create' | 'edit'>('create')
     const [editingTask, setEditingTask] = useState<Task | null>(null)
-    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+
 
     const [formTitle, setFormTitle] = useState('')
     const [formPriority, setFormPriority] = useState<Task['priority']>('other')
@@ -33,18 +33,11 @@ export default function TasksPage() {
         else query = query.order('created_at', { ascending: false })
         const { data } = await query
         setTasks(data || [])
-        setSelectedIds(new Set())
         setLoading(false)
     }, [filterStatus, sortOrder])
 
     useEffect(() => { fetchTasks() }, [fetchTasks])
 
-    const toggleSelect = (id: string) => {
-        setSelectedIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
-    }
-    const toggleSelectAll = () => {
-        setSelectedIds(prev => prev.size === tasks.length ? new Set() : new Set(tasks.map(t => t.id)))
-    }
 
     const handleCheck = async (taskId: string) => {
         const task = tasks.find(t => t.id === taskId)
@@ -54,11 +47,6 @@ export default function TasksPage() {
         fetchTasks()
     }
 
-    const handleBulkDelete = async () => {
-        if (selectedIds.size === 0) return
-        await supabase.from('tasks').delete().in('id', Array.from(selectedIds))
-        fetchTasks()
-    }
 
     const handleCsvExport = () => {
         const header = 'Title,Priority,Project,Due,Status\n'
@@ -110,7 +98,7 @@ export default function TasksPage() {
                     <select className="select" style={{ width: 'auto', paddingRight: '28px' }} value={sortOrder} onChange={(e) => setSortOrder(e.target.value)}>
                         <option value="default">Sort: Default</option><option value="due_asc">期限: 昇順</option><option value="due_desc">期限: 降順</option>
                     </select>
-                    {selectedIds.size > 0 && <button className="btn btn-outline" style={{ color: 'var(--color-danger)', borderColor: 'var(--color-danger)' }} onClick={handleBulkDelete}>🗑 Delete ({selectedIds.size})</button>}
+
                     <button className="btn btn-outline" onClick={handleCsvExport}>📥 CSV</button>
                     <button className="btn btn-primary" onClick={openCreatePanel}>＋ New Task</button>
                 </div>
@@ -120,13 +108,11 @@ export default function TasksPage() {
                 <>
                     <div className={styles.tableWrap}><table className={styles.table}>
                         <thead><tr>
-                            <th className={styles.thCheck}><input type="checkbox" className="checkbox" checked={selectedIds.size === tasks.length && tasks.length > 0} onChange={toggleSelectAll} /></th>
                             <th style={{ width: 40 }}></th>
                             <th>Task Name</th><th>Priority</th><th>Project</th><th>Due Date</th><th>Status</th>
                         </tr></thead>
                         <tbody>{tasks.map(t => (
                             <tr key={t.id} style={t.status === '完了' ? { opacity: 0.5, textDecoration: 'line-through' } : {}}>
-                                <td className={styles.tdCheck}><input type="checkbox" className="checkbox" checked={selectedIds.has(t.id)} onChange={() => toggleSelect(t.id)} /></td>
                                 <td className={styles.tdCheck}><input type="checkbox" className="checkbox" checked={t.status === '完了'} onChange={() => handleCheck(t.id)} title="完了にする" style={{ accentColor: 'var(--color-brand)' }} /></td>
                                 <td className={styles.tdName}><span className="text-link" onClick={() => openEditPanel(t)}>{t.title}</span></td>
                                 <td><span className={`dot ${priorityDot(t.priority)}`} /> {priorityLabel(t.priority)}</td>
