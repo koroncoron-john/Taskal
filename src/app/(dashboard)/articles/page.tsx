@@ -83,21 +83,23 @@ export default function ArticlesPage() {
         setThumbnailPreview(URL.createObjectURL(file))
     }
 
-    const uploadThumbnail = async (articleId: string): Promise<string | null> => {
-        if (!thumbnailFile) return null
-        const ext = thumbnailFile.name.split('.').pop()
-        const path = `articles/${articleId}/thumbnail.${ext}`
-        const { error } = await supabase.storage.from('thumbnails').upload(path, thumbnailFile, { upsert: true })
-        if (error) { console.error('Upload error:', error); return null }
-        const { data } = supabase.storage.from('thumbnails').getPublicUrl(path)
-        return data.publicUrl
+    const fileToBase64 = (file: File): Promise<string> => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader()
+            reader.onload = () => resolve(reader.result as string)
+            reader.onerror = reject
+            reader.readAsDataURL(file)
+        })
     }
 
     const handleSave = async () => {
         setUploading(true)
 
-        // まずサムネイルURLを決定
+        // サムネイルBase64を決定
         let thumbnailUrl = editing ? ((editing as any).thumbnail_url || '') : ''
+        if (thumbnailFile) {
+            thumbnailUrl = await fileToBase64(thumbnailFile)
+        }
 
         const payload: any = {
             title: formTitle,
@@ -106,25 +108,13 @@ export default function ArticlesPage() {
             platforms: formPlatforms,
             status: formStatus,
             month: formMonth,
+            thumbnail_url: thumbnailUrl,
         }
 
-        let articleId = editing?.id
         if (panelMode === 'create') {
-            const { data } = await supabase.from('articles').insert(payload).select().single()
-            articleId = data?.id
+            await supabase.from('articles').insert(payload)
         } else if (editing) {
             await supabase.from('articles').update(payload).eq('id', editing.id)
-        }
-
-        // サムネイルアップロード
-        if (articleId && thumbnailFile) {
-            const url = await uploadThumbnail(articleId)
-            if (url) thumbnailUrl = url
-        }
-
-        // thumbnail_urlを保存（新規アップロードまたは既存保持）
-        if (articleId) {
-            await supabase.from('articles').update({ thumbnail_url: thumbnailUrl }).eq('id', articleId)
         }
 
         setUploading(false)
@@ -139,14 +129,12 @@ export default function ArticlesPage() {
         fetchArticles()
     }
 
-    const handleDownloadThumbnail = async (url: string, title: string) => {
-        const response = await fetch(url)
-        const blob = await response.blob()
+    const handleDownloadThumbnail = (dataUrl: string, title: string) => {
         const a = document.createElement('a')
-        a.href = URL.createObjectURL(blob)
-        a.download = `${title}_thumbnail.${url.split('.').pop()?.split('?')[0] || 'png'}`
+        a.href = dataUrl
+        const ext = dataUrl.startsWith('data:image/png') ? 'png' : dataUrl.startsWith('data:image/gif') ? 'gif' : 'jpg'
+        a.download = `${title}_thumbnail.${ext}`
         a.click()
-        URL.revokeObjectURL(a.href)
     }
 
     // Platform追加/削除
