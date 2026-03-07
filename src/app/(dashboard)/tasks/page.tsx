@@ -48,14 +48,7 @@ export default function TasksPage() {
     }
 
 
-    const handleCsvExport = () => {
-        const header = 'Title,Priority,Project,Due,Status\n'
-        const rows = tasks.map(t => `"${t.title}","${t.priority}","${t.project}","${t.due || ''}","${t.status}"`).join('\n')
-        const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8;' })
-        const url = URL.createObjectURL(blob)
-        const a = document.createElement('a'); a.href = url; a.download = 'tasks.csv'; a.click()
-        URL.revokeObjectURL(url)
-    }
+
 
     const openCreatePanel = () => {
         setPanelMode('create'); setEditingTask(null); setFormTitle(''); setFormPriority('other'); setFormDue(''); setFormProject(''); setFormStatus('未着手'); setIsPanelOpen(true)
@@ -99,7 +92,7 @@ export default function TasksPage() {
                         <option value="default">Sort: Default</option><option value="due_asc">期限: 昇順</option><option value="due_desc">期限: 降順</option>
                     </select>
 
-                    <button className="btn btn-outline" onClick={handleCsvExport}>📥 CSV</button>
+
                     <button className="btn btn-primary" onClick={openCreatePanel}>＋ New Task</button>
                 </div>
             </div>
