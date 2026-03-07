@@ -85,11 +85,17 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS tasks_updated_at ON tasks;
 CREATE TRIGGER tasks_updated_at BEFORE UPDATE ON tasks FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+DROP TRIGGER IF EXISTS projects_updated_at ON projects;
 CREATE TRIGGER projects_updated_at BEFORE UPDATE ON projects FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+DROP TRIGGER IF EXISTS articles_updated_at ON articles;
 CREATE TRIGGER articles_updated_at BEFORE UPDATE ON articles FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+DROP TRIGGER IF EXISTS movies_updated_at ON movies;
 CREATE TRIGGER movies_updated_at BEFORE UPDATE ON movies FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+DROP TRIGGER IF EXISTS learning_notes_updated_at ON learning_notes;
 CREATE TRIGGER learning_notes_updated_at BEFORE UPDATE ON learning_notes FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+DROP TRIGGER IF EXISTS business_cards_updated_at ON business_cards;
 CREATE TRIGGER business_cards_updated_at BEFORE UPDATE ON business_cards FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 
 -- ============================================

@@ -15,19 +15,23 @@ export default function DashboardPage() {
     const [projects, setProjects] = useState<Project[]>([])
     const [loading, setLoading] = useState(true)
 
-    useEffect(() => {
-        const fetchAll = async () => {
-            setLoading(true)
-            const [tasksRes, projectsRes] = await Promise.all([
-                supabase.from('tasks').select('*').neq('status', '完了').order('due', { ascending: true, nullsFirst: false }),
-                supabase.from('projects').select('*').order('created_at', { ascending: false }),
-            ])
-            setTasks(tasksRes.data || [])
-            setProjects(projectsRes.data || [])
-            setLoading(false)
-        }
+    const fetchAll = async () => {
+        setLoading(true)
+        const [tasksRes, projectsRes] = await Promise.all([
+            supabase.from('tasks').select('*').neq('status', '完了').order('due', { ascending: true, nullsFirst: false }),
+            supabase.from('projects').select('*').order('created_at', { ascending: false }),
+        ])
+        setTasks(tasksRes.data || [])
+        setProjects(projectsRes.data || [])
+        setLoading(false)
+    }
+
+    useEffect(() => { fetchAll() }, [])
+
+    const handleCheckTask = async (taskId: string) => {
+        await supabase.from('tasks').update({ status: '完了' }).eq('id', taskId)
         fetchAll()
-    }, [])
+    }
 
     const matrix = {
         urgent_important: tasks.filter(t => t.priority === 'urgent_important').length,
@@ -60,7 +64,7 @@ export default function DashboardPage() {
                 <div className={styles.taskList}>
                     {todayTasks.map((task) => (
                         <div key={task.id} className={styles.taskRow}>
-                            <input type="checkbox" className="checkbox" />
+                            <input type="checkbox" className="checkbox" onChange={() => handleCheckTask(task.id)} />
                             <span className={`dot ${priorityDotClass(task.priority)}`} />
                             <span className={styles.taskName}>{task.title}</span>
                             <span className={styles.taskMeta}>
@@ -93,22 +97,10 @@ export default function DashboardPage() {
                 <section className={styles.card}>
                     <h2 className={styles.sectionTitle}>マトリクス</h2>
                     <div className={styles.matrix}>
-                        <div className={styles.matrixCell}>
-                            <span className={styles.matrixLabel}>緊急×重要</span>
-                            <span className={styles.matrixCount} style={{ opacity: 1 }}>{matrix.urgent_important}</span>
-                        </div>
-                        <div className={styles.matrixCell}>
-                            <span className={styles.matrixLabel}>重要</span>
-                            <span className={styles.matrixCount} style={{ opacity: 0.8 }}>{matrix.important}</span>
-                        </div>
-                        <div className={styles.matrixCell}>
-                            <span className={styles.matrixLabel}>緊急</span>
-                            <span className={styles.matrixCount} style={{ opacity: 0.6 }}>{matrix.urgent}</span>
-                        </div>
-                        <div className={styles.matrixCell}>
-                            <span className={styles.matrixLabel}>その他</span>
-                            <span className={styles.matrixCount} style={{ opacity: 0.4 }}>{matrix.other}</span>
-                        </div>
+                        <div className={styles.matrixCell}><span className={styles.matrixLabel}>緊急×重要</span><span className={styles.matrixCount}>{matrix.urgent_important}</span></div>
+                        <div className={styles.matrixCell}><span className={styles.matrixLabel}>重要</span><span className={styles.matrixCount} style={{ opacity: 0.8 }}>{matrix.important}</span></div>
+                        <div className={styles.matrixCell}><span className={styles.matrixLabel}>緊急</span><span className={styles.matrixCount} style={{ opacity: 0.6 }}>{matrix.urgent}</span></div>
+                        <div className={styles.matrixCell}><span className={styles.matrixLabel}>その他</span><span className={styles.matrixCount} style={{ opacity: 0.4 }}>{matrix.other}</span></div>
                     </div>
                 </section>
             </div>

@@ -10,6 +10,7 @@ export default function MoviesPage() {
     const supabase = createClient()
     const [movies, setMovies] = useState<Movie[]>([])
     const [loading, setLoading] = useState(true)
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
     const [isPanelOpen, setIsPanelOpen] = useState(false)
     const [panelMode, setPanelMode] = useState<'create' | 'edit'>('create')
     const [editing, setEditing] = useState<Movie | null>(null)
@@ -22,17 +23,37 @@ export default function MoviesPage() {
         setLoading(true)
         const { data } = await supabase.from('movies').select('*').order('created_at', { ascending: false })
         setMovies(data || [])
+        setSelectedIds(new Set())
         setLoading(false)
     }, [])
 
     useEffect(() => { fetchMovies() }, [fetchMovies])
+
+    const toggleSelect = (id: string) => { setSelectedIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n }) }
+    const toggleSelectAll = () => { setSelectedIds(prev => prev.size === movies.length ? new Set() : new Set(movies.map(m => m.id))) }
+
+    const handleBulkDelete = async () => {
+        if (selectedIds.size === 0) return
+        await supabase.from('movies').delete().in('id', Array.from(selectedIds))
+        fetchMovies()
+    }
+
+    const handleCsvExport = () => {
+        const header = 'Title,Status,Views,Likes,Popularity\n'
+        const rows = movies.map(m => `"${m.title}","${m.status}",${m.views},${m.likes},${m.popularity}`).join('\n')
+        const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8;' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a'); a.href = url; a.download = 'movies.csv'; a.click()
+        URL.revokeObjectURL(url)
+    }
 
     const openCreate = () => { setPanelMode('create'); setEditing(null); setFormTitle(''); setFormStatus('アイデア'); setIsPanelOpen(true) }
     const openEdit = (m: Movie) => { setPanelMode('edit'); setEditing(m); setFormTitle(m.title); setFormStatus(m.status); setIsPanelOpen(true) }
 
     const handleSave = async () => {
         const p = { title: formTitle, status: formStatus }
-        if (panelMode === 'create') { await supabase.from('movies').insert(p) } else if (editing) { await supabase.from('movies').update(p).eq('id', editing.id) }
+        if (panelMode === 'create') await supabase.from('movies').insert(p)
+        else if (editing) await supabase.from('movies').update(p).eq('id', editing.id)
         setIsPanelOpen(false); fetchMovies()
     }
     const handleDelete = async () => { if (!editing) return; await supabase.from('movies').delete().eq('id', editing.id); setIsPanelOpen(false); fetchMovies() }
@@ -41,13 +62,20 @@ export default function MoviesPage() {
         <div>
             <div className={styles.header}>
                 <h1 className="text-page-title">Movies</h1>
-                <div className={styles.actions}><button className="btn btn-primary" onClick={openCreate}>＋ New Video</button></div>
+                <div className={styles.actions}>
+                    {selectedIds.size > 0 && <button className="btn btn-outline" style={{ color: 'var(--color-danger)', borderColor: 'var(--color-danger)' }} onClick={handleBulkDelete}>🗑 Delete ({selectedIds.size})</button>}
+                    <button className="btn btn-outline" onClick={handleCsvExport}>📥 CSV</button>
+                    <button className="btn btn-primary" onClick={openCreate}>＋ New Video</button>
+                </div>
             </div>
             {loading ? <p className="text-secondary" style={{ padding: 24 }}>読み込み中...</p> : (
                 <><div className={styles.tableWrap}><table className={styles.table}>
-                    <thead><tr><th className={styles.thCheck}><input type="checkbox" className="checkbox" /></th><th>Title</th><th>Status</th><th>Views</th><th>Likes</th><th>Popularity</th></tr></thead>
+                    <thead><tr>
+                        <th className={styles.thCheck}><input type="checkbox" className="checkbox" checked={selectedIds.size === movies.length && movies.length > 0} onChange={toggleSelectAll} /></th>
+                        <th>Title</th><th>Status</th><th>Views</th><th>Likes</th><th>Popularity</th>
+                    </tr></thead>
                     <tbody>{movies.map(v => (
-                        <tr key={v.id}><td className={styles.tdCheck}><input type="checkbox" className="checkbox" /></td>
+                        <tr key={v.id}><td className={styles.tdCheck}><input type="checkbox" className="checkbox" checked={selectedIds.has(v.id)} onChange={() => toggleSelect(v.id)} /></td>
                             <td className={styles.tdName}><span className="text-link" onClick={() => openEdit(v)}>{v.title}</span></td>
                             <td>{v.status}</td><td className="text-mono text-secondary">{v.views.toLocaleString()}</td>
                             <td className="text-mono text-secondary">{v.likes.toLocaleString()}</td>
