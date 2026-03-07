@@ -11,11 +11,29 @@ const phases = [
     { key: '納品', label: '納品' }, { key: '請求', label: '請求' }, { key: '保守', label: '保守' },
 ]
 
+interface MaintenanceLog {
+    id: string
+    project_id: string
+    description: string
+    duration_seconds: number
+    work_date: string
+    created_at: string
+}
+
 const formatTime = (seconds: number) => {
     const h = Math.floor(seconds / 3600).toString().padStart(2, '0')
     const m = Math.floor((seconds % 3600) / 60).toString().padStart(2, '0')
     const s = (seconds % 60).toString().padStart(2, '0')
     return `${h}:${m}:${s}`
+}
+
+const formatDuration = (seconds: number) => {
+    const h = Math.floor(seconds / 3600)
+    const m = Math.floor((seconds % 3600) / 60)
+    const s = seconds % 60
+    if (h > 0) return `${h}時間${m}分${s}秒`
+    if (m > 0) return `${m}分${s}秒`
+    return `${s}秒`
 }
 
 export default function ProjectsPage() {
@@ -36,7 +54,15 @@ export default function ProjectsPage() {
     // タイマー
     const [timerRunning, setTimerRunning] = useState(false)
     const [timerSeconds, setTimerSeconds] = useState(0)
+    const [workDescription, setWorkDescription] = useState('')
     const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+    // 履歴
+    const [logs, setLogs] = useState<MaintenanceLog[]>([])
+    const [logMonth, setLogMonth] = useState(() => {
+        const now = new Date()
+        return `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}`
+    })
 
     useEffect(() => {
         if (timerRunning) {
@@ -47,11 +73,30 @@ export default function ProjectsPage() {
         return () => { if (intervalRef.current) clearInterval(intervalRef.current) }
     }, [timerRunning])
 
-    // フェーズが変わったらタイマーリセット
     useEffect(() => {
         setTimerRunning(false)
         setTimerSeconds(0)
+        setWorkDescription('')
     }, [selected?.id])
+
+    // 履歴データfetch
+    const fetchLogs = useCallback(async (projectId: string, month: string) => {
+        const startDate = `${month}-01`
+        const [y, m] = month.split('-').map(Number)
+        const endDate = new Date(y, m, 0).toISOString().slice(0, 10)
+        const { data } = await supabase
+            .from('maintenance_logs')
+            .select('*')
+            .eq('project_id', projectId)
+            .gte('work_date', startDate)
+            .lte('work_date', endDate)
+            .order('work_date', { ascending: false })
+        setLogs(data || [])
+    }, [])
+
+    useEffect(() => {
+        if (selected?.id) fetchLogs(selected.id, logMonth)
+    }, [selected?.id, logMonth, fetchLogs])
 
     const fetchProjects = useCallback(async () => {
         setLoading(true)
@@ -83,6 +128,7 @@ export default function ProjectsPage() {
         fillForm(p)
         setTimerRunning(false)
         setTimerSeconds(0)
+        setWorkDescription('')
     }
 
     const handleSave = async () => {
@@ -106,6 +152,43 @@ export default function ProjectsPage() {
         setProjects(list.data || [])
         if (data) { setSelected(data); fillForm(data) }
     }
+
+    // タイマー記録を保存
+    const handleSaveLog = async () => {
+        if (!selected || timerSeconds === 0) return
+        const today = new Date().toISOString().slice(0, 10)
+        await supabase.from('maintenance_logs').insert({
+            project_id: selected.id,
+            description: workDescription || '作業',
+            duration_seconds: timerSeconds,
+            work_date: today,
+        })
+        setTimerRunning(false)
+        setTimerSeconds(0)
+        setWorkDescription('')
+        fetchLogs(selected.id, logMonth)
+    }
+
+    const handleDeleteLog = async (logId: string) => {
+        await supabase.from('maintenance_logs').delete().eq('id', logId)
+        if (selected) fetchLogs(selected.id, logMonth)
+    }
+
+    // 月ナビゲーション
+    const navigateMonth = (direction: number) => {
+        const [y, m] = logMonth.split('-').map(Number)
+        const d = new Date(y, m - 1 + direction, 1)
+        setLogMonth(`${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}`)
+    }
+
+    const totalSeconds = logs.reduce((sum, l) => sum + l.duration_seconds, 0)
+    const maintenanceCost = formMaintenanceCost || 0
+    const totalHours = totalSeconds / 3600
+    const hourlyRate = totalHours > 0 ? Math.round(maintenanceCost / totalHours) : 0
+    const displayMonth = (() => {
+        const [y, m] = logMonth.split('-').map(Number)
+        return `${y}年${m}月`
+    })()
 
     const activeProjects = projects.filter((p: any) => p.is_active !== false)
     const inactiveProjects = projects.filter((p: any) => p.is_active === false)
@@ -193,27 +276,87 @@ export default function ProjectsPage() {
                                 <h2 className="text-section-header">Maintenance Timer</h2>
                                 {isMaintenancePhase ? (
                                     <>
+                                        {/* タイマー */}
                                         <div className={styles.timerRow}>
                                             <span style={{ fontFamily: 'var(--font-mono)', fontSize: 32, fontWeight: 700, color: timerRunning ? 'var(--color-brand)' : 'var(--color-text-primary)', letterSpacing: 2 }}>
                                                 {formatTime(timerSeconds)}
                                             </span>
                                         </div>
-                                        <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+                                        <div style={{ marginTop: 12 }}>
+                                            <input type="text" className="select" placeholder="作業内容を入力..." value={workDescription} onChange={e => setWorkDescription(e.target.value)} style={{ backgroundImage: 'none', cursor: 'text', marginBottom: 8 }} />
+                                        </div>
+                                        <div style={{ display: 'flex', gap: 8 }}>
                                             {!timerRunning ? (
                                                 <button className="btn btn-primary" onClick={() => setTimerRunning(true)}>▶ Start</button>
                                             ) : (
                                                 <button className="btn btn-outline" onClick={() => setTimerRunning(false)}>⏸ Stop</button>
                                             )}
                                             <button className="btn btn-outline" onClick={() => { setTimerRunning(false); setTimerSeconds(0) }}>↺ Reset</button>
+                                            {timerSeconds > 0 && !timerRunning && (
+                                                <button className="btn btn-primary" onClick={handleSaveLog}>💾 記録する</button>
+                                            )}
                                         </div>
 
+                                        {/* 月額保守費用 */}
                                         <div className={styles.formGrid} style={{ marginTop: 24 }}>
                                             <label>月額保守費用</label>
                                             <input type="number" className="select" value={formMaintenanceCost} onChange={e => setFormMaintenanceCost(Number(e.target.value))} style={{ backgroundImage: 'none', cursor: 'text' }} />
                                         </div>
-                                        <p className="text-secondary" style={{ marginTop: 8, fontSize: 12 }}>
+                                        <p className="text-secondary" style={{ marginTop: 4, fontSize: 12 }}>
                                             保守費用は「Save changes」で保存されます
                                         </p>
+
+                                        {/* 作業履歴 */}
+                                        <div style={{ marginTop: 32 }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                                                <h3 className="text-section-header" style={{ margin: 0 }}>作業履歴</h3>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                    <button className="btn btn-outline" style={{ padding: '4px 8px', fontSize: 12 }} onClick={() => navigateMonth(-1)}>◀</button>
+                                                    <span style={{ fontWeight: 500, minWidth: 80, textAlign: 'center' }}>{displayMonth}</span>
+                                                    <button className="btn btn-outline" style={{ padding: '4px 8px', fontSize: 12 }} onClick={() => navigateMonth(1)}>▶</button>
+                                                </div>
+                                            </div>
+
+                                            {logs.length > 0 ? (
+                                                <>
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                                        {logs.map(log => (
+                                                            <div key={log.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', border: '1px solid var(--color-border)', borderRadius: 'var(--border-radius)', background: 'var(--color-bg)' }}>
+                                                                <div>
+                                                                    <div style={{ fontWeight: 500 }}>{log.description}</div>
+                                                                    <div className="text-secondary" style={{ fontSize: 12, marginTop: 2 }}>{log.work_date}</div>
+                                                                </div>
+                                                                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                                                    <span className="text-mono" style={{ fontWeight: 500 }}>{formatDuration(log.duration_seconds)}</span>
+                                                                    <button onClick={() => handleDeleteLog(log.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-tertiary)', fontSize: 14 }} title="削除">×</button>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+
+                                                    {/* サマリー */}
+                                                    <div style={{ marginTop: 16, padding: '12px 16px', border: '1px solid var(--color-border)', borderRadius: 'var(--border-radius)', background: 'var(--color-surface)' }}>
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                                                            <span className="text-secondary">合計作業時間</span>
+                                                            <span className="text-mono" style={{ fontWeight: 700 }}>{formatDuration(totalSeconds)}</span>
+                                                        </div>
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                                                            <span className="text-secondary">月額保守費用</span>
+                                                            <span className="text-mono" style={{ fontWeight: 500 }}>¥{maintenanceCost.toLocaleString()}</span>
+                                                        </div>
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid var(--color-border-light)', paddingTop: 8, marginTop: 8 }}>
+                                                            <span className="text-secondary">時給換算</span>
+                                                            <span className="text-mono" style={{ fontWeight: 700, color: 'var(--color-brand)' }}>¥{hourlyRate.toLocaleString()}/h</span>
+                                                        </div>
+                                                    </div>
+                                                </>
+                                            ) : (
+                                                <div style={{ padding: '16px', border: '1px solid var(--color-border)', borderRadius: 'var(--border-radius)', background: 'var(--color-surface)', textAlign: 'center' }}>
+                                                    <p className="text-secondary" style={{ margin: 0 }}>{displayMonth}の作業履歴はありません</p>
+                                                    <p className="text-mono" style={{ margin: '8px 0 0', fontWeight: 700 }}>¥0</p>
+                                                </div>
+                                            )}
+                                        </div>
                                     </>
                                 ) : (
                                     <p className="text-secondary">保守フェーズ時にアクティブになります</p>
@@ -226,4 +369,3 @@ export default function ProjectsPage() {
         </div>
     )
 }
-
