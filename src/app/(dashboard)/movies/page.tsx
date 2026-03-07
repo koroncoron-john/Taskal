@@ -87,7 +87,10 @@ export default function MoviesPage() {
                             <td className={styles.tdCheck}><input type="checkbox" className="checkbox" checked={selectedIds.has(v.id)} onChange={() => toggleSelect(v.id)} /></td>
                             <td className={styles.tdName}><span className="text-link" onClick={() => openEdit(v)}>{v.title}</span></td>
                             <td>{(v as any).youtube_url ? (
-                                <a href={(v as any).youtube_url} target="_blank" rel="noopener noreferrer" className="text-link" style={{ fontSize: 13 }}>🔗 Link</a>
+                                <a href={(v as any).youtube_url} target="_blank" rel="noopener noreferrer" className="text-link" style={{ fontSize: 13, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                    External Link
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></svg>
+                                </a>
                             ) : <span className="text-secondary">—</span>}</td>
                             <td>{v.status}</td>
                         </tr>
