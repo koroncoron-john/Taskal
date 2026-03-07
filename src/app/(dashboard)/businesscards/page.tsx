@@ -21,7 +21,7 @@ export default function BusinessCardsPage() {
     const [formPhone, setFormPhone] = useState('')
     const [formAffinity, setFormAffinity] = useState<BusinessCard['affinity']>('普通')
     const [formRegisteredDate, setFormRegisteredDate] = useState('')
-    const [formMeetStatus, setFormMeetStatus] = useState('会ってない')
+    const [formMeetStatus, setFormMeetStatus] = useState('Not Met')
     const [formMemo, setFormMemo] = useState('')
     const [importResult, setImportResult] = useState<string | null>(null)
     const csvInputRef = useRef<HTMLInputElement>(null)
@@ -39,7 +39,7 @@ export default function BusinessCardsPage() {
         setPanelMode('create'); setEditing(null)
         setFormName(''); setFormCompany(''); setFormRole(''); setFormEmail(''); setFormPhone('')
         setFormAffinity('普通'); setFormRegisteredDate(new Date().toISOString().slice(0, 10))
-        setFormMeetStatus('会ってない'); setFormMemo('')
+        setFormMeetStatus('Not Met'); setFormMemo('')
         setIsPanelOpen(true)
     }
     const openEdit = (c: BusinessCard) => {
@@ -47,7 +47,7 @@ export default function BusinessCardsPage() {
         setFormName(c.name); setFormCompany(c.company); setFormRole(c.role)
         setFormEmail(c.email); setFormPhone(c.phone); setFormAffinity(c.affinity)
         setFormRegisteredDate((c as any).registered_date || '')
-        setFormMeetStatus((c as any).meet_status || '会ってない')
+        setFormMeetStatus((c as any).meet_status || 'Not Met')
         setFormMemo((c as any).memo || '')
         setIsPanelOpen(true)
     }
@@ -96,7 +96,7 @@ export default function BusinessCardsPage() {
                 else if (h === 'phone' || h === '電話' || h === '電話番号') record.phone = v
                 else if (h === 'affinity' || h === '親密度') record.affinity = v || '普通'
                 else if (h === 'memo' || h === 'メモ') record.memo = v
-                else if (h === 'meet_status' || h === 'ステータス') record.meet_status = v || '会ってない'
+                else if (h === 'meet_status' || h === 'ステータス') record.meet_status = v || 'Not Met'
                 else if (h === 'registered_date' || h === '登録日') record.registered_date = v || null
             })
             if (record.name) {
@@ -105,7 +105,7 @@ export default function BusinessCardsPage() {
                 if (!record.email) record.email = ''
                 if (!record.phone) record.phone = ''
                 if (!record.affinity) record.affinity = '普通'
-                if (!record.meet_status) record.meet_status = '会ってない'
+                if (!record.meet_status) record.meet_status = 'Not Met'
                 if (!record.memo) record.memo = ''
                 await supabase.from('business_cards').insert(record)
                 imported++
@@ -170,10 +170,10 @@ export default function BusinessCardsPage() {
                             <td>
                                 <span style={{
                                     display: 'inline-block', padding: '2px 10px', borderRadius: 12, fontSize: 12, fontWeight: 600,
-                                    background: (c as any).meet_status === '会った' ? 'rgba(34,197,94,0.12)' : 'rgba(156,163,175,0.12)',
-                                    color: (c as any).meet_status === '会った' ? '#22c55e' : 'var(--color-text-tertiary)'
+                                    background: (c as any).meet_status === 'Met' ? 'rgba(34,197,94,0.12)' : 'rgba(156,163,175,0.12)',
+                                    color: (c as any).meet_status === 'Met' ? '#22c55e' : 'var(--color-text-tertiary)'
                                 }}>
-                                    {(c as any).meet_status || '会ってない'}
+                                    {(c as any).meet_status || 'Not Met'}
                                 </span>
                             </td>
                             <td className="text-mono text-secondary" style={{ fontSize: 12 }}>{(c as any).registered_date || '—'}</td>
@@ -197,8 +197,8 @@ export default function BusinessCardsPage() {
                     <div>
                         <label className="text-section-label">Status</label>
                         <select className="select" value={formMeetStatus} onChange={e => setFormMeetStatus(e.target.value)}>
-                            <option value="会ってない">会ってない</option>
-                            <option value="会った">会った</option>
+                            <option value="Not Met">Not Met</option>
+                            <option value="Met">Met</option>
                         </select>
                     </div>
                     <div>
