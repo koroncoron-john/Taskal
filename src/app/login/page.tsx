@@ -73,7 +73,7 @@ export default function LoginPage() {
             }
             // 成功時はGoogleにリダイレクトされるのでloadingはそのまま
         } catch (e: any) {
-            setError('Googleログインに失敗しました。設定を確認してください。')
+            setError('Googleログインエラー: ' + (e?.message || JSON.stringify(e)))
             setGoogleLoading(false)
         }
     }
