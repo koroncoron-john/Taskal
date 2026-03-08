@@ -1,5 +1,7 @@
 'use client'
 
+export const dynamic = 'force-dynamic'
+
 import { useState, useEffect, useCallback, useRef } from 'react'
 import styles from './page.module.css'
 import DateInput from '../../../components/DateInput/DateInput'
