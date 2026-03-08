@@ -156,7 +156,8 @@ export default function ProjectsPage() {
     }
 
     const handleCreate = async () => {
-        const { data } = await supabase.from('projects').insert({ name: 'New Project', client: '', pm: '', phase: '提案', budget: 0, is_active: true, maintenance_cost: 0 }).select().single()
+        const { data: { user } } = await supabase.auth.getUser()
+        const { data } = await supabase.from('projects').insert({ name: 'New Project', client: '', pm: '', phase: '提案', budget: 0, is_active: true, maintenance_cost: 0, user_id: user?.id }).select().single()
         const list = await supabase.from('projects').select('*').order('created_at', { ascending: false })
         setProjects(list.data || [])
         if (data) { setSelected(data); fillForm(data) }
@@ -246,6 +247,11 @@ export default function ProjectsPage() {
                                     </button>
                                 ))}
                             </>
+                        )}
+                        {projects.length === 0 && (
+                            <div style={{ padding: '32px 16px', textAlign: 'center', color: 'var(--color-text-tertiary)', fontSize: 14 }}>
+                                No projects yet. Add one from "+ New Project".
+                            </div>
                         )}
                     </div>
                     {selected && (

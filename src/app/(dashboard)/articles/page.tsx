@@ -114,7 +114,8 @@ export default function ArticlesPage() {
         }
 
         if (panelMode === 'create') {
-            await supabase.from('articles').insert(payload)
+            const { data: { user } } = await supabase.auth.getUser()
+            await supabase.from('articles').insert({ ...payload, user_id: user?.id })
         } else if (editing) {
             await supabase.from('articles').update(payload).eq('id', editing.id)
         }

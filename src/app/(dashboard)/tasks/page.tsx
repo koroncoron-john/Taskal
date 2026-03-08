@@ -70,9 +70,10 @@ export default function TasksPage() {
         setPanelMode('edit'); setEditingTask(task); setFormTitle(task.title); setFormPriority(task.priority); setFormDue(task.due || ''); setFormProject(task.project); setFormStatus(task.status); setIsPanelOpen(true)
     }
     const handleSave = async () => {
-        const payload = { title: formTitle, priority: formPriority, due: formDue || null, project: formProject, status: formStatus }
+        const { data: { user } } = await supabase.auth.getUser()
+        const payload = { title: formTitle, priority: formPriority, due: formDue || null, project: formProject, status: formStatus, user_id: user?.id }
         if (panelMode === 'create') await supabase.from('tasks').insert(payload)
-        else if (editingTask) await supabase.from('tasks').update(payload).eq('id', editingTask.id)
+        else if (editingTask) await supabase.from('tasks').update({ title: formTitle, priority: formPriority, due: formDue || null, project: formProject, status: formStatus }).eq('id', editingTask.id)
         setIsPanelOpen(false); fetchTasks()
     }
     const handleDelete = async () => {

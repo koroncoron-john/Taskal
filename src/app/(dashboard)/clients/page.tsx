@@ -62,7 +62,8 @@ export default function ClientsPage() {
         if (selected) {
             await supabase.from('clients').update(payload).eq('id', selected.id)
         } else {
-            await supabase.from('clients').insert(payload)
+            const { data: { user } } = await supabase.auth.getUser()
+            await supabase.from('clients').insert({ ...payload, user_id: user?.id })
         }
         await fetchClients()
         setSaving(false)
@@ -100,7 +101,7 @@ export default function ClientsPage() {
                     </thead>
                     <tbody>
                         {clients.length === 0 ? (
-                            <tr><td colSpan={5} style={{ textAlign: 'center', color: 'var(--color-text-tertiary)', padding: '32px' }}>クライアントがまだありません。「+ New Client」から追加してください。</td></tr>
+                            <tr><td colSpan={5} style={{ textAlign: 'center', color: 'var(--color-text-tertiary)', padding: '48px 24px', fontSize: 14 }}>No clients yet. Add one from "+ New Client".</td></tr>
                         ) : clients.map(c => (
                             <tr key={c.id} onClick={() => openPanel(c)} style={{ cursor: 'pointer' }}>
                                 <td style={{ fontWeight: 600, color: 'var(--color-text-primary)' }}>{c.name}</td>

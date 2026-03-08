@@ -39,7 +39,10 @@ export default function LearningPage() {
 
     const handleSave = async () => {
         const p = { title: formTitle, category: formCategory, content: formContent, status: formStatus }
-        if (panelMode === 'create') { await supabase.from('learning_notes').insert(p) } else if (editing) { await supabase.from('learning_notes').update(p).eq('id', editing.id) }
+        if (panelMode === 'create') {
+            const { data: { user } } = await supabase.auth.getUser()
+            await supabase.from('learning_notes').insert({ ...p, user_id: user?.id })
+        } else if (editing) { await supabase.from('learning_notes').update(p).eq('id', editing.id) }
         setIsPanelOpen(false); fetchNotes()
     }
     const handleDelete = async () => { if (!editing) return; await supabase.from('learning_notes').delete().eq('id', editing.id); setIsPanelOpen(false); fetchNotes() }
@@ -67,6 +70,12 @@ export default function LearningPage() {
                             {note.ai_feedback && <div className={styles.aiFeedback}><span className={styles.aiLabel}>AI Feedback</span><p>{note.ai_feedback}</p></div>}
                         </div>
                     ))}
+                    {notes.length === 0 && selectedCat === null && (
+                        <p style={{ padding: '48px 24px', textAlign: 'center', color: 'var(--color-text-tertiary)', fontSize: 14 }}>No notes yet. Add one from "+ New Note".</p>
+                    )}
+                    {notes.length === 0 && selectedCat !== null && (
+                        <p style={{ padding: '48px 24px', textAlign: 'center', color: 'var(--color-text-tertiary)', fontSize: 14 }}>No data matching your filter criteria.</p>
+                    )}
                 </div>
             )}
             <SlidePanel isOpen={isPanelOpen} onClose={() => setIsPanelOpen(false)} title={panelMode === 'create' ? 'New Note' : 'Edit Note'}>

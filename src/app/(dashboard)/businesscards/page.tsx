@@ -66,8 +66,10 @@ export default function BusinessCardsPage() {
             meet_status: formMeetStatus,
             memo: formMemo,
         }
-        if (panelMode === 'create') await supabase.from('business_cards').insert(p)
-        else if (editing) await supabase.from('business_cards').update(p).eq('id', editing.id)
+        if (panelMode === 'create') {
+            const { data: { user } } = await supabase.auth.getUser()
+            await supabase.from('business_cards').insert({ ...p, user_id: user?.id })
+        } else if (editing) await supabase.from('business_cards').update(p).eq('id', editing.id)
         setIsPanelOpen(false); fetchCards()
     }
     const handleDelete = async () => {
