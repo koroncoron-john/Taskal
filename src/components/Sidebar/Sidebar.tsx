@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from 'react'
-import { usePathname } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import styles from './Sidebar.module.css'
+import { createClient } from '@/lib/supabase/client'
 
 /* Supabase/Stitch風のミニマルSVGアイコン */
 const icons: Record<string, React.ReactNode> = {
@@ -60,8 +61,29 @@ interface SidebarProps {
 
 export default function Sidebar({ collapsed }: SidebarProps) {
     const pathname = usePathname()
+    const router = useRouter()
+    const supabase = createClient()
     const [mobileOpen, setMobileOpen] = useState(false)
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
+    const [userName, setUserName] = useState('User')
+    const [userInitial, setUserInitial] = useState('U')
+
+    useEffect(() => {
+        const getUser = async () => {
+            const { data: { user } } = await supabase.auth.getUser()
+            if (user) {
+                const name = user.user_metadata?.full_name || user.email?.split('@')[0] || 'User'
+                setUserName(name)
+                setUserInitial(name.charAt(0).toUpperCase())
+            }
+        }
+        getUser()
+    }, [])
+
+    const handleLogout = async () => {
+        await supabase.auth.signOut()
+        router.push('/login')
+    }
 
     return (
         <>
@@ -86,14 +108,17 @@ export default function Sidebar({ collapsed }: SidebarProps) {
                 </nav>
 
                 <div className={styles.userArea} onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}>
-                    <span className={styles.userAvatar}>J</span>
-                    {!collapsed && <span className={styles.userName}>Jon</span>}
+                    <span className={styles.userAvatar}>{userInitial}</span>
+                    {!collapsed && <span className={styles.userName}>{userName}</span>}
                     {isUserMenuOpen && (
                         <div className={styles.userMenu}>
-                            <button className={styles.userMenuItem}>Profile Settings</button>
-                            <button className={styles.userMenuItem}>Billing</button>
+                            <Link href="/settings" className={styles.userMenuItem} onClick={() => setIsUserMenuOpen(false)}>
+                                Profile Settings
+                            </Link>
                             <div className={styles.userMenuDivider} />
-                            <button className={styles.userMenuItem} style={{ color: 'var(--color-danger)' }}>Log out</button>
+                            <button className={styles.userMenuItem} style={{ color: 'var(--color-danger)' }} onClick={handleLogout}>
+                                Log out
+                            </button>
                         </div>
                     )}
                 </div>
@@ -118,10 +143,7 @@ export default function Sidebar({ collapsed }: SidebarProps) {
             {mobileOpen && (
                 <div className={styles.overlay} onClick={() => setMobileOpen(false)}>
                     <div className={styles.slideMenu} onClick={(e) => e.stopPropagation()}>
-                        <button
-                            className={styles.closeBtn}
-                            onClick={() => setMobileOpen(false)}
-                        >
+                        <button className={styles.closeBtn} onClick={() => setMobileOpen(false)}>
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                                 <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
                             </svg>
@@ -140,8 +162,8 @@ export default function Sidebar({ collapsed }: SidebarProps) {
                             ))}
                         </nav>
                         <div className={styles.slideUser}>
-                            <span className={styles.userAvatar}>J</span>
-                            <span>Jon</span>
+                            <span className={styles.userAvatar}>{userInitial}</span>
+                            <span>{userName}</span>
                         </div>
                     </div>
                 </div>
@@ -149,4 +171,3 @@ export default function Sidebar({ collapsed }: SidebarProps) {
         </>
     )
 }
-

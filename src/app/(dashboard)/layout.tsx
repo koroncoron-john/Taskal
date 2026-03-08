@@ -1,15 +1,34 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import Sidebar from '@/components/Sidebar/Sidebar'
 import styles from './layout.module.css'
+import { createClient } from '@/lib/supabase/client'
 
 export default function DashboardLayout({
     children,
 }: {
     children: React.ReactNode
 }) {
+    const router = useRouter()
+    const supabase = createClient()
     const [collapsed, setCollapsed] = useState(false)
+    const [checked, setChecked] = useState(false)
+
+    useEffect(() => {
+        const checkAuth = async () => {
+            const { data: { user } } = await supabase.auth.getUser()
+            if (!user) {
+                router.replace('/login')
+            } else {
+                setChecked(true)
+            }
+        }
+        checkAuth()
+    }, [])
+
+    if (!checked) return null
 
     return (
         <div className={styles.shell}>
