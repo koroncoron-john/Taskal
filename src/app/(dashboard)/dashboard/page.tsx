@@ -16,15 +16,23 @@ export default function DashboardPage() {
     const [tasks, setTasks] = useState<Task[]>([])
     const [projects, setProjects] = useState<Project[]>([])
     const [loading, setLoading] = useState(true)
+    const [displayName, setDisplayName] = useState('')
+    const [greeting] = useState(() => {
+        const greetings = ['おはようございます', 'お疲れ様です', 'こんにちは', '今日も頑張りましょう', 'お手伝いします']
+        return greetings[Math.floor(Math.random() * greetings.length)]
+    })
 
     const fetchAll = async () => {
         setLoading(true)
-        const [tasksRes, projectsRes] = await Promise.all([
+        const [tasksRes, projectsRes, userRes] = await Promise.all([
             supabase.from('tasks').select('*').neq('status', '完了').order('due', { ascending: true, nullsFirst: false }),
             supabase.from('projects').select('*').order('created_at', { ascending: false }),
+            supabase.auth.getUser(),
         ])
         setTasks(tasksRes.data || [])
         setProjects(projectsRes.data || [])
+        const name = userRes.data.user?.user_metadata?.full_name || userRes.data.user?.email?.split('@')[0] || ''
+        setDisplayName(name)
         setLoading(false)
     }
 
@@ -55,7 +63,7 @@ export default function DashboardPage() {
     return (
         <div className={styles.dashboard}>
             <div className={styles.greeting}>
-                <p className={styles.greetingText}>おはようございます、じょんさん</p>
+                <p className={styles.greetingText}>{greeting}、{displayName}さん</p>
                 <h1 className={styles.date}>
                     {new Date().toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' })}
                 </h1>
