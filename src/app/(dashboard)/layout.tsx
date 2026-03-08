@@ -19,15 +19,25 @@ export default function DashboardLayout({
     const [checked, setChecked] = useState(false)
 
     useEffect(() => {
-        const checkAuth = async () => {
-            const { data: { user } } = await supabase.auth.getUser()
-            if (!user) {
-                router.replace('/login')
-            } else {
+        // まずgetSessionでURLハッシュのトークンを処理
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            if (session) {
                 setChecked(true)
+            } else {
+                router.replace('/login')
             }
-        }
-        checkAuth()
+        })
+
+        // OAuth後のセッション確立を検知
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            if (session) {
+                setChecked(true)
+            } else {
+                router.replace('/login')
+            }
+        })
+
+        return () => subscription.unsubscribe()
     }, [])
 
     if (!checked) return null
