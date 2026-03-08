@@ -38,6 +38,11 @@ const icons: Record<string, React.ReactNode> = {
             <path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z" /><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z" />
         </svg>
     ),
+    clients: (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" /><polyline points="9 22 9 12 15 12 15 22" />
+        </svg>
+    ),
     businesscards: (
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
             <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 00-3-3.87" /><path d="M16 3.13a4 4 0 010 7.75" />
@@ -49,6 +54,7 @@ const navItems = [
     { href: '/dashboard', label: 'Dashboard', iconKey: 'dashboard' },
     { href: '/tasks', label: 'Tasks', iconKey: 'tasks' },
     { href: '/projects', label: 'Projects', iconKey: 'projects' },
+    { href: '/clients', label: 'Clients', iconKey: 'clients' },
     { href: '/articles', label: 'Articles', iconKey: 'articles' },
     { href: '/movies', label: 'Movies', iconKey: 'movies' },
     { href: '/learning', label: 'Learning', iconKey: 'learning' },

@@ -52,6 +52,7 @@ export default function ProjectsPage() {
     const [formDeadline, setFormDeadline] = useState('')
     const [formIsActive, setFormIsActive] = useState(true)
     const [formMaintenanceCost, setFormMaintenanceCost] = useState(0)
+    const [clientOptions, setClientOptions] = useState<{ id: string, name: string }[]>([])
 
     // タイマー
     const [timerRunning, setTimerRunning] = useState(false)
@@ -113,6 +114,12 @@ export default function ProjectsPage() {
     }, [])
 
     useEffect(() => { fetchProjects() }, [fetchProjects])
+
+    useEffect(() => {
+        supabase.from('clients').select('id, name').order('name').then(({ data }) => {
+            if (data) setClientOptions(data)
+        })
+    }, [])
 
     const fillForm = (p: Project) => {
         setFormName(p.name)
@@ -250,7 +257,10 @@ export default function ProjectsPage() {
                                     <input type="text" className="select" value={formName} onChange={e => setFormName(e.target.value)} style={{ backgroundImage: 'none', cursor: 'text' }} />
                                     <label>Client</label>
                                     <select className="select" value={formClient} onChange={e => setFormClient(e.target.value)}>
-                                        <option value="">（なし）</option><option value="A社">A社</option><option value="B社">B社</option><option value="C社">C社</option><option value="D社">D社</option>
+                                        <option value="">（なし）</option>
+                                        {clientOptions.map(c => (
+                                            <option key={c.id} value={c.name}>{c.name}</option>
+                                        ))}
                                     </select>
                                     <label>PM</label>
                                     <input type="text" className="select" value={formPm} onChange={e => setFormPm(e.target.value)} style={{ backgroundImage: 'none', cursor: 'text' }} />
