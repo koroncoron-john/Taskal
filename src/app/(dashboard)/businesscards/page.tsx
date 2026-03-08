@@ -209,7 +209,10 @@ export default function BusinessCardsPage() {
                             <td style={{ color: affinityColor(c.affinity), fontWeight: 600 }}>{c.affinity}</td>
                         </tr>
                     ))}
-                        {filteredCards.length === 0 && (
+                        {cards.length === 0 && (
+                            <tr><td colSpan={8} style={{ textAlign: 'center', padding: '48px 24px', color: 'var(--color-text-tertiary)', fontSize: 14 }}>No business cards yet. Add one from "+ New Card".</td></tr>
+                        )}
+                        {cards.length > 0 && filteredCards.length === 0 && (
                             <tr><td colSpan={8} style={{ textAlign: 'center', padding: '48px 24px', color: 'var(--color-text-tertiary)', fontSize: 14 }}>No data matching your filter criteria.</td></tr>
                         )}
                     </tbody></table></div><div className={styles.pagination}>{filteredCards.length} / {cards.length} contacts</div></>

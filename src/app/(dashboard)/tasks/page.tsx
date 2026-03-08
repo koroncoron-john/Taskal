@@ -127,7 +127,10 @@ export default function TasksPage() {
                                 <td>{t.status}</td>
                             </tr>
                         ))}
-                            {tasks.length === 0 && (
+                            {tasks.length === 0 && filterStatus === 'all' && (
+                                <tr><td colSpan={6} style={{ textAlign: 'center', padding: '48px 24px', color: 'var(--color-text-tertiary)', fontSize: 14 }}>No tasks yet. Add one from "+ New Task".</td></tr>
+                            )}
+                            {tasks.length === 0 && filterStatus !== 'all' && (
                                 <tr><td colSpan={6} style={{ textAlign: 'center', padding: '48px 24px', color: 'var(--color-text-tertiary)', fontSize: 14 }}>No data matching your filter criteria.</td></tr>
                             )}
                         </tbody>

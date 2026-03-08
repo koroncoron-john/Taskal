@@ -193,7 +193,7 @@ export default function ArticlesPage() {
                         </tr>
                     ))}
                         {articles.length === 0 && (
-                            <tr><td colSpan={6} style={{ textAlign: 'center', padding: '48px 24px', color: 'var(--color-text-tertiary)', fontSize: 14 }}>No data matching your filter criteria.</td></tr>
+                            <tr><td colSpan={6} style={{ textAlign: 'center', padding: '48px 24px', color: 'var(--color-text-tertiary)', fontSize: 14 }}>No articles yet. Add one from "+ New Article".</td></tr>
                         )}
                     </tbody></table></div><div className={styles.pagination}>{articles.length} articles</div></>
             )}
