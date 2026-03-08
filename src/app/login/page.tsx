@@ -60,14 +60,20 @@ export default function LoginPage() {
     const handleGoogleLogin = async () => {
         setGoogleLoading(true)
         setError('')
-        const { error } = await supabase.auth.signInWithOAuth({
-            provider: 'google',
-            options: {
-                redirectTo: `${location.origin}/dashboard`,
+        try {
+            const { error } = await supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                    redirectTo: `${location.origin}/dashboard`,
+                }
+            })
+            if (error) {
+                setError('Googleログインに失敗しました: ' + error.message)
+                setGoogleLoading(false)
             }
-        })
-        if (error) {
-            setError('Googleログインに失敗しました')
+            // 成功時はGoogleにリダイレクトされるのでloadingはそのまま
+        } catch (e: any) {
+            setError('Googleログインに失敗しました。設定を確認してください。')
             setGoogleLoading(false)
         }
     }
