@@ -22,6 +22,15 @@ interface MaintenanceLog {
     created_at: string
 }
 
+interface Requirement {
+    id: string
+    project_id: string
+    title: string
+    budget: number
+    deadline: string
+    created_at: string
+}
+
 const formatTime = (seconds: number) => {
     const h = Math.floor(seconds / 3600).toString().padStart(2, '0')
     const m = Math.floor((seconds % 3600) / 60).toString().padStart(2, '0')
@@ -53,6 +62,14 @@ export default function ProjectsPage() {
     const [formIsActive, setFormIsActive] = useState(true)
     const [formMaintenanceCost, setFormMaintenanceCost] = useState(0)
     const [clientOptions, setClientOptions] = useState<{ id: string, name: string }[]>([])
+
+    // 追加要件
+    const [requirements, setRequirements] = useState<Requirement[]>([])
+    const [reqTitle, setReqTitle] = useState('')
+    const [reqBudget, setReqBudget] = useState(0)
+    const [reqDeadline, setReqDeadline] = useState('')
+    const [reqEditing, setReqEditing] = useState<Requirement | null>(null)
+    const [reqPanelOpen, setReqPanelOpen] = useState(false)
 
     // タイマー
     const [timerRunning, setTimerRunning] = useState(false)
@@ -101,6 +118,16 @@ export default function ProjectsPage() {
         if (selected?.id) fetchLogs(selected.id, logMonth)
     }, [selected?.id, logMonth, fetchLogs])
 
+    const fetchRequirements = useCallback(async (projectId: string) => {
+        const { data } = await supabase.from('project_requirements').select('*').eq('project_id', projectId).order('created_at')
+        setRequirements(data || [])
+    }, [])
+
+    useEffect(() => {
+        if (selected?.id) fetchRequirements(selected.id)
+        else setRequirements([])
+    }, [selected?.id, fetchRequirements])
+
     const fetchProjects = useCallback(async () => {
         setLoading(true)
         const { data } = await supabase.from('projects').select('*').order('created_at', { ascending: false })
@@ -138,6 +165,7 @@ export default function ProjectsPage() {
         setTimerRunning(false)
         setTimerSeconds(0)
         setWorkDescription('')
+        setReqPanelOpen(false)
     }
 
     const handleSave = async () => {
@@ -168,6 +196,26 @@ export default function ProjectsPage() {
         await supabase.from('projects').delete().eq('id', selected.id)
         setSelected(null)
         fetchProjects()
+    }
+
+    // 追加要件 CRUD
+    const openReqCreate = () => { setReqEditing(null); setReqTitle(''); setReqBudget(0); setReqDeadline(''); setReqPanelOpen(true) }
+    const openReqEdit = (r: Requirement) => { setReqEditing(r); setReqTitle(r.title); setReqBudget(r.budget); setReqDeadline(r.deadline || ''); setReqPanelOpen(true) }
+    const handleReqSave = async () => {
+        if (!selected) return
+        if (reqEditing) {
+            await supabase.from('project_requirements').update({ title: reqTitle, budget: reqBudget, deadline: reqDeadline || null }).eq('id', reqEditing.id)
+        } else {
+            await supabase.from('project_requirements').insert({ project_id: selected.id, title: reqTitle, budget: reqBudget, deadline: reqDeadline || null })
+        }
+        setReqPanelOpen(false)
+        fetchRequirements(selected.id)
+    }
+    const handleReqDelete = async () => {
+        if (!reqEditing || !selected) return
+        await supabase.from('project_requirements').delete().eq('id', reqEditing.id)
+        setReqPanelOpen(false)
+        fetchRequirements(selected.id)
     }
 
     // タイマー記録を保存
@@ -206,6 +254,8 @@ export default function ProjectsPage() {
         const [y, m] = logMonth.split('-').map(Number)
         return `${y}年${m}月`
     })()
+    const reqTotalBudget = requirements.reduce((sum, r) => sum + (r.budget || 0), 0)
+    const grandTotalBudget = (formBudget || 0) + reqTotalBudget
 
     const activeProjects = projects.filter((p: any) => p.is_active !== false)
     const inactiveProjects = projects.filter((p: any) => p.is_active === false)
@@ -286,6 +336,64 @@ export default function ProjectsPage() {
                                 <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
                                     <button className="btn btn-primary" onClick={handleSave}>Save changes</button>
                                     <button className="btn btn-outline" style={{ color: 'var(--color-danger)', borderColor: 'var(--color-danger)' }} onClick={handleDelete}>Delete</button>
+                                </div>
+                            </div>
+
+                            {/* 追加要件セクション */}
+                            <div className={styles.section}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                                    <h2 className="text-section-header" style={{ margin: 0 }}>Additional Requirements</h2>
+                                    <button className="btn btn-outline" style={{ fontSize: 12, padding: '4px 10px' }} onClick={openReqCreate}>+ Add</button>
+                                </div>
+
+                                {/* 追加要件インラインフォーム */}
+                                {reqPanelOpen && (
+                                    <div style={{ padding: '12px 16px', border: '1px solid var(--color-brand)', borderRadius: 'var(--border-radius)', background: 'var(--color-surface)', marginBottom: 12 }}>
+                                        <div className={styles.formGrid}>
+                                            <label>Title</label>
+                                            <input type="text" className="select" value={reqTitle} onChange={e => setReqTitle(e.target.value)} placeholder="例: 2ndフェーズ" style={{ backgroundImage: 'none', cursor: 'text' }} />
+                                            <label>Budget (¥)</label>
+                                            <input type="number" className="select" value={reqBudget} onChange={e => setReqBudget(Number(e.target.value))} style={{ backgroundImage: 'none', cursor: 'text' }} />
+                                            <label>Deadline</label>
+                                            <DateInput value={reqDeadline} onChange={setReqDeadline} />
+                                        </div>
+                                        <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+                                            <button className="btn btn-primary" onClick={handleReqSave} disabled={!reqTitle}>Save</button>
+                                            {reqEditing && <button className="btn btn-outline" style={{ color: 'var(--color-danger)', borderColor: 'var(--color-danger)' }} onClick={handleReqDelete}>Delete</button>}
+                                            <button className="btn btn-outline" onClick={() => setReqPanelOpen(false)}>Cancel</button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* 追加要件リスト */}
+                                {requirements.length === 0 ? (
+                                    <p className="text-secondary" style={{ fontSize: 13, margin: 0 }}>追加要件はありません</p>
+                                ) : requirements.map(r => (
+                                    <div key={r.id} onClick={() => openReqEdit(r)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', border: '1px solid var(--color-border)', borderRadius: 'var(--border-radius)', background: 'var(--color-bg)', marginBottom: 6, cursor: 'pointer' }}>
+                                        <div>
+                                            <div style={{ fontWeight: 600 }}>{r.title}</div>
+                                            {r.deadline && <div className="text-secondary" style={{ fontSize: 12 }}>期限: {r.deadline}</div>}
+                                        </div>
+                                        <span className="text-mono" style={{ fontWeight: 700, color: 'var(--color-brand)' }}>¥{(r.budget || 0).toLocaleString()}</span>
+                                    </div>
+                                ))}
+
+                                {/* 合計予算サマリー */}
+                                <div style={{ marginTop: 12, padding: '12px 16px', border: '1px solid var(--color-border)', borderRadius: 'var(--border-radius)', background: 'var(--color-surface)' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                                        <span className="text-secondary">Base Budget</span>
+                                        <span className="text-mono">¥{(formBudget || 0).toLocaleString()}</span>
+                                    </div>
+                                    {requirements.map(r => (
+                                        <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                                            <span className="text-secondary">{r.title}</span>
+                                            <span className="text-mono">¥{(r.budget || 0).toLocaleString()}</span>
+                                        </div>
+                                    ))}
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid var(--color-border-light)', paddingTop: 8, marginTop: 4 }}>
+                                        <span style={{ fontWeight: 600 }}>Total</span>
+                                        <span className="text-mono" style={{ fontWeight: 700, fontSize: 16, color: 'var(--color-brand)' }}>¥{grandTotalBudget.toLocaleString()}</span>
+                                    </div>
                                 </div>
                             </div>
 
