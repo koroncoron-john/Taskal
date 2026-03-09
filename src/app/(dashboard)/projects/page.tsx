@@ -61,6 +61,7 @@ export default function ProjectsPage() {
     const [formDeadline, setFormDeadline] = useState('')
     const [formIsActive, setFormIsActive] = useState(true)
     const [formMaintenanceCost, setFormMaintenanceCost] = useState(0)
+    const [formInvoiced, setFormInvoiced] = useState(false)
     const [clientOptions, setClientOptions] = useState<{ id: string, name: string }[]>([])
 
     // 追加要件
@@ -68,6 +69,7 @@ export default function ProjectsPage() {
     const [reqTitle, setReqTitle] = useState('')
     const [reqBudget, setReqBudget] = useState(0)
     const [reqDeadline, setReqDeadline] = useState('')
+    const [reqInvoiced, setReqInvoiced] = useState(false)
     const [reqEditing, setReqEditing] = useState<Requirement | null>(null)
     const [reqPanelOpen, setReqPanelOpen] = useState(false)
 
@@ -157,6 +159,7 @@ export default function ProjectsPage() {
         setFormDeadline(p.deadline || '')
         setFormIsActive((p as any).is_active !== false)
         setFormMaintenanceCost((p as any).maintenance_cost || 0)
+        setFormInvoiced(!!(p as any).invoiced)
     }
 
     const selectProject = (p: Project) => {
@@ -173,7 +176,7 @@ export default function ProjectsPage() {
         await supabase.from('projects').update({
             name: formName, client: formClient, pm: formPm,
             phase: formPhase, budget: formBudget, deadline: formDeadline || null,
-            is_active: formIsActive, maintenance_cost: formMaintenanceCost,
+            is_active: formIsActive, maintenance_cost: formMaintenanceCost, invoiced: formInvoiced,
         }).eq('id', selected.id)
 
         const { data } = await supabase.from('projects').select('*').order('created_at', { ascending: false })
@@ -199,14 +202,14 @@ export default function ProjectsPage() {
     }
 
     // 追加要件 CRUD
-    const openReqCreate = () => { setReqEditing(null); setReqTitle(''); setReqBudget(0); setReqDeadline(''); setReqPanelOpen(true) }
-    const openReqEdit = (r: Requirement) => { setReqEditing(r); setReqTitle(r.title); setReqBudget(r.budget); setReqDeadline(r.deadline || ''); setReqPanelOpen(true) }
+    const openReqCreate = () => { setReqEditing(null); setReqTitle(''); setReqBudget(0); setReqDeadline(''); setReqInvoiced(false); setReqPanelOpen(true) }
+    const openReqEdit = (r: Requirement) => { setReqEditing(r); setReqTitle(r.title); setReqBudget(r.budget); setReqDeadline(r.deadline || ''); setReqInvoiced(!!(r as any).invoiced); setReqPanelOpen(true) }
     const handleReqSave = async () => {
         if (!selected) return
         if (reqEditing) {
-            await supabase.from('project_requirements').update({ title: reqTitle, budget: reqBudget, deadline: reqDeadline || null }).eq('id', reqEditing.id)
+            await supabase.from('project_requirements').update({ title: reqTitle, budget: reqBudget, deadline: reqDeadline || null, invoiced: reqInvoiced }).eq('id', reqEditing.id)
         } else {
-            await supabase.from('project_requirements').insert({ project_id: selected.id, title: reqTitle, budget: reqBudget, deadline: reqDeadline || null })
+            await supabase.from('project_requirements').insert({ project_id: selected.id, title: reqTitle, budget: reqBudget, deadline: reqDeadline || null, invoiced: reqInvoiced })
         }
         setReqPanelOpen(false)
         fetchRequirements(selected.id)
@@ -216,6 +219,10 @@ export default function ProjectsPage() {
         await supabase.from('project_requirements').delete().eq('id', reqEditing.id)
         setReqPanelOpen(false)
         fetchRequirements(selected.id)
+    }
+    const handleReqToggleInvoiced = async (r: Requirement) => {
+        await supabase.from('project_requirements').update({ invoiced: !(r as any).invoiced }).eq('id', r.id)
+        if (selected) fetchRequirements(selected.id)
     }
 
     // タイマー記録を保存
@@ -332,6 +339,11 @@ export default function ProjectsPage() {
                                         <option value="active">Active</option>
                                         <option value="inactive">Inactive</option>
                                     </select>
+                                    <label>Invoice</label>
+                                    <div style={{ display: 'flex', gap: 8 }}>
+                                        <button type="button" onClick={() => setFormInvoiced(false)} style={{ flex: 1, padding: '8px', border: '1px solid var(--color-border)', borderRadius: 'var(--border-radius)', background: !formInvoiced ? 'var(--color-text-primary)' : 'var(--color-bg)', color: !formInvoiced ? '#fff' : 'var(--color-text-secondary)', cursor: 'pointer', fontSize: 13 }}>未請求</button>
+                                        <button type="button" onClick={() => setFormInvoiced(true)} style={{ flex: 1, padding: '8px', border: '1px solid var(--color-border)', borderRadius: 'var(--border-radius)', background: formInvoiced ? '#22c55e' : 'var(--color-bg)', color: formInvoiced ? '#fff' : 'var(--color-text-secondary)', cursor: 'pointer', fontSize: 13 }}>請求済み ✓</button>
+                                    </div>
                                 </div>
                                 <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
                                     <button className="btn btn-primary" onClick={handleSave}>Save changes</button>
@@ -356,6 +368,11 @@ export default function ProjectsPage() {
                                             <input type="number" className="select" value={reqBudget} onChange={e => setReqBudget(Number(e.target.value))} style={{ backgroundImage: 'none', cursor: 'text' }} />
                                             <label>Deadline</label>
                                             <DateInput value={reqDeadline} onChange={setReqDeadline} />
+                                            <label>Invoice</label>
+                                            <div style={{ display: 'flex', gap: 8 }}>
+                                                <button type="button" onClick={() => setReqInvoiced(false)} style={{ flex: 1, padding: '6px', border: '1px solid var(--color-border)', borderRadius: 'var(--border-radius)', background: !reqInvoiced ? 'var(--color-text-primary)' : 'var(--color-bg)', color: !reqInvoiced ? '#fff' : 'var(--color-text-secondary)', cursor: 'pointer', fontSize: 12 }}>未請求</button>
+                                                <button type="button" onClick={() => setReqInvoiced(true)} style={{ flex: 1, padding: '6px', border: '1px solid var(--color-border)', borderRadius: 'var(--border-radius)', background: reqInvoiced ? '#22c55e' : 'var(--color-bg)', color: reqInvoiced ? '#fff' : 'var(--color-text-secondary)', cursor: 'pointer', fontSize: 12 }}>請求済み ✓</button>
+                                            </div>
                                         </div>
                                         <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
                                             <button className="btn btn-primary" onClick={handleReqSave} disabled={!reqTitle}>Save</button>
@@ -369,12 +386,20 @@ export default function ProjectsPage() {
                                 {requirements.length === 0 ? (
                                     <p className="text-secondary" style={{ fontSize: 13, margin: 0 }}>追加要件はありません</p>
                                 ) : requirements.map(r => (
-                                    <div key={r.id} onClick={() => openReqEdit(r)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', border: '1px solid var(--color-border)', borderRadius: 'var(--border-radius)', background: 'var(--color-bg)', marginBottom: 6, cursor: 'pointer' }}>
-                                        <div>
-                                            <div style={{ fontWeight: 600 }}>{r.title}</div>
+                                    <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', border: '1px solid var(--color-border)', borderRadius: 'var(--border-radius)', background: 'var(--color-bg)', marginBottom: 6, gap: 8 }}>
+                                        <div style={{ flex: 1, minWidth: 0, cursor: 'pointer' }} onClick={() => openReqEdit(r)}>
+                                            <div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.title}</div>
                                             {r.deadline && <div className="text-secondary" style={{ fontSize: 12 }}>期限: {r.deadline}</div>}
                                         </div>
-                                        <span className="text-mono" style={{ fontWeight: 700, color: 'var(--color-brand)' }}>¥{(r.budget || 0).toLocaleString()}</span>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                                            <span className="text-mono" style={{ fontWeight: 700, color: 'var(--color-brand)' }}>¥{(r.budget || 0).toLocaleString()}</span>
+                                            <button
+                                                onClick={e => { e.stopPropagation(); handleReqToggleInvoiced(r) }}
+                                                style={{ fontSize: 11, padding: '3px 8px', borderRadius: 20, border: 'none', cursor: 'pointer', background: (r as any).invoiced ? '#22c55e' : 'var(--color-border)', color: (r as any).invoiced ? '#fff' : 'var(--color-text-tertiary)', whiteSpace: 'nowrap' }}
+                                            >
+                                                {(r as any).invoiced ? '請求済 ✓' : '未請求'}
+                                            </button>
+                                        </div>
                                     </div>
                                 ))}
 
