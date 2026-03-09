@@ -94,34 +94,22 @@ export default function DashboardPage() {
                 </div>
             </section>
 
-            <div className={styles.twoCol}>
-                <section className={styles.card}>
-                    <h2 className={styles.sectionTitle}>案件サマリー</h2>
-                    <div className={styles.projectList}>
-                        {projects.map((p) => (
-                            <div key={p.id} className={styles.projectRow}>
-                                <div className={styles.projectInfo}>
-                                    <span className={styles.projectName}>{p.name} - {p.client}</span>
-                                    <span className={`text-caption ${styles.projectPhase}`}>{p.phase}</span>
-                                </div>
-                                <div className="progress-bar">
-                                    <div className="progress-bar-fill" style={{ width: `${phaseProgress[p.phase] || 0}%` }} />
-                                </div>
+            <section className={styles.card}>
+                <h2 className={styles.sectionTitle}>案件サマリー</h2>
+                <div className={styles.projectList}>
+                    {projects.map((p) => (
+                        <div key={p.id} className={styles.projectRow}>
+                            <div className={styles.projectInfo}>
+                                <span className={styles.projectName}>{p.name} - {p.client}</span>
+                                <span className="text-caption" style={{ whiteSpace: 'nowrap', flexShrink: 0, marginLeft: 8 }}>{p.phase}</span>
                             </div>
-                        ))}
-                    </div>
-                </section>
-
-                <section className={styles.card}>
-                    <h2 className={styles.sectionTitle}>マトリクス</h2>
-                    <div className={styles.matrix}>
-                        <div className={styles.matrixCell}><span className={styles.matrixLabel}>緊急×重要</span><span className={styles.matrixCount}>{matrix.urgent_important}</span></div>
-                        <div className={styles.matrixCell}><span className={styles.matrixLabel}>重要</span><span className={styles.matrixCount} style={{ opacity: 0.8 }}>{matrix.important}</span></div>
-                        <div className={styles.matrixCell}><span className={styles.matrixLabel}>緊急</span><span className={styles.matrixCount} style={{ opacity: 0.6 }}>{matrix.urgent}</span></div>
-                        <div className={styles.matrixCell}><span className={styles.matrixLabel}>その他</span><span className={styles.matrixCount} style={{ opacity: 0.4 }}>{matrix.other}</span></div>
-                    </div>
-                </section>
-            </div>
+                            <div className="progress-bar">
+                                <div className="progress-bar-fill" style={{ width: `${phaseProgress[p.phase] || 0}%` }} />
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </section>
         </div>
     )
 }
