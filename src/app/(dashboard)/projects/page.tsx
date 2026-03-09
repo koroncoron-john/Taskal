@@ -7,6 +7,7 @@ import styles from './page.module.css'
 import DateInput from '../../../components/DateInput/DateInput'
 import { createClient } from '../../../lib/supabase/client'
 import type { Project } from '../../../types/database'
+import { useToast } from '../../../components/Toast/Toast'
 
 const phases = [
     { key: '提案', label: '提案' }, { key: '見積', label: '見積' }, { key: '開発', label: '開発' },
@@ -49,6 +50,7 @@ const formatDuration = (seconds: number) => {
 
 export default function ProjectsPage() {
     const supabase = createClient()
+    const { showToast } = useToast()
     const [projects, setProjects] = useState<Project[]>([])
     const [selected, setSelected] = useState<Project | null>(null)
     const [loading, setLoading] = useState(true)
@@ -178,6 +180,7 @@ export default function ProjectsPage() {
             phase: formPhase, budget: formBudget, deadline: formDeadline || null,
             is_active: formIsActive, maintenance_cost: formMaintenanceCost, invoiced: formInvoiced,
         }).eq('id', selected.id)
+        showToast(`「${formName}」を保存しました`)
 
         const { data } = await supabase.from('projects').select('*').order('created_at', { ascending: false })
         const list = data || []
@@ -191,6 +194,7 @@ export default function ProjectsPage() {
         const list = await supabase.from('projects').select('*').order('created_at', { ascending: false })
         setProjects(list.data || [])
         if (data) { setSelected(data); fillForm(data) }
+        showToast('新しいプロジェクトを作成しました')
     }
 
     const handleDelete = async () => {
@@ -208,8 +212,10 @@ export default function ProjectsPage() {
         if (!selected) return
         if (reqEditing) {
             await supabase.from('project_requirements').update({ title: reqTitle, budget: reqBudget, deadline: reqDeadline || null, invoiced: reqInvoiced }).eq('id', reqEditing.id)
+            showToast(`「${reqTitle}」を更新しました`)
         } else {
             await supabase.from('project_requirements').insert({ project_id: selected.id, title: reqTitle, budget: reqBudget, deadline: reqDeadline || null, invoiced: reqInvoiced })
+            showToast(`追加要件「${reqTitle}」を登録しました`)
         }
         setReqPanelOpen(false)
         fetchRequirements(selected.id)
@@ -217,11 +223,14 @@ export default function ProjectsPage() {
     const handleReqDelete = async () => {
         if (!reqEditing || !selected) return
         await supabase.from('project_requirements').delete().eq('id', reqEditing.id)
+        showToast(`「${reqEditing.title}」を削除しました`, 'error')
         setReqPanelOpen(false)
         fetchRequirements(selected.id)
     }
     const handleReqToggleInvoiced = async (r: Requirement) => {
-        await supabase.from('project_requirements').update({ invoiced: !(r as any).invoiced }).eq('id', r.id)
+        const newStatus = !(r as any).invoiced
+        await supabase.from('project_requirements').update({ invoiced: newStatus }).eq('id', r.id)
+        showToast(`「${r.title}」の請求ステータスを「${newStatus ? '請求済み' : '未請求'}」に変更しました`)
         if (selected) fetchRequirements(selected.id)
     }
 
@@ -340,9 +349,8 @@ export default function ProjectsPage() {
                                         <option value="inactive">Inactive</option>
                                     </select>
                                     <label>Invoice</label>
-                                    <div style={{ display: 'flex', gap: 8, maxWidth: 160 }}>
-                                        <button type="button" onClick={() => setFormInvoiced(false)} style={{ flex: 1, padding: '8px', border: '1px solid var(--color-border)', borderRadius: 'var(--border-radius)', background: !formInvoiced ? 'var(--color-text-primary)' : 'var(--color-bg)', color: !formInvoiced ? '#fff' : 'var(--color-text-secondary)', cursor: 'pointer', fontSize: 13 }}>未請求</button>
-                                        <button type="button" onClick={() => setFormInvoiced(true)} style={{ flex: 1, padding: '8px', border: '1px solid var(--color-border)', borderRadius: 'var(--border-radius)', background: formInvoiced ? '#22c55e' : 'var(--color-bg)', color: formInvoiced ? '#fff' : 'var(--color-text-secondary)', cursor: 'pointer', fontSize: 13 }}>請求済み ✓</button>
+                                    <div onClick={() => setFormInvoiced(!formInvoiced)} style={{ display: 'inline-flex', width: 44, height: 24, borderRadius: 12, background: formInvoiced ? 'var(--color-brand)' : 'var(--color-border)', cursor: 'pointer', transition: 'background 0.25s', position: 'relative', alignItems: 'center', flexShrink: 0 }}>
+                                        <div style={{ position: 'absolute', left: formInvoiced ? 22 : 2, width: 20, height: 20, borderRadius: '50%', background: '#fff', transition: 'left 0.25s', boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }} />
                                     </div>
                                 </div>
                                 <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
@@ -369,9 +377,8 @@ export default function ProjectsPage() {
                                             <label>Deadline</label>
                                             <DateInput value={reqDeadline} onChange={setReqDeadline} />
                                             <label>Invoice</label>
-                                            <div style={{ display: 'flex', gap: 8, maxWidth: 160 }}>
-                                                <button type="button" onClick={() => setReqInvoiced(false)} style={{ flex: 1, padding: '6px', border: '1px solid var(--color-border)', borderRadius: 'var(--border-radius)', background: !reqInvoiced ? 'var(--color-text-primary)' : 'var(--color-bg)', color: !reqInvoiced ? '#fff' : 'var(--color-text-secondary)', cursor: 'pointer', fontSize: 12 }}>未請求</button>
-                                                <button type="button" onClick={() => setReqInvoiced(true)} style={{ flex: 1, padding: '6px', border: '1px solid var(--color-border)', borderRadius: 'var(--border-radius)', background: reqInvoiced ? '#22c55e' : 'var(--color-bg)', color: reqInvoiced ? '#fff' : 'var(--color-text-secondary)', cursor: 'pointer', fontSize: 12 }}>請求済み ✓</button>
+                                            <div onClick={() => setReqInvoiced(!reqInvoiced)} style={{ display: 'inline-flex', width: 36, height: 20, borderRadius: 10, background: reqInvoiced ? 'var(--color-brand)' : 'var(--color-border)', cursor: 'pointer', transition: 'background 0.25s', position: 'relative', alignItems: 'center', flexShrink: 0 }}>
+                                                <div style={{ position: 'absolute', left: reqInvoiced ? 18 : 2, width: 16, height: 16, borderRadius: '50%', background: '#fff', transition: 'left 0.25s', boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }} />
                                             </div>
                                         </div>
                                         <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
@@ -391,14 +398,11 @@ export default function ProjectsPage() {
                                             <div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.title}</div>
                                             {r.deadline && <div className="text-secondary" style={{ fontSize: 12 }}>期限: {r.deadline}</div>}
                                         </div>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
                                             <span className="text-mono" style={{ fontWeight: 700, color: 'var(--color-brand)' }}>¥{(r.budget || 0).toLocaleString()}</span>
-                                            <button
-                                                onClick={e => { e.stopPropagation(); handleReqToggleInvoiced(r) }}
-                                                style={{ fontSize: 11, padding: '3px 8px', borderRadius: 20, border: 'none', cursor: 'pointer', background: (r as any).invoiced ? '#22c55e' : 'var(--color-border)', color: (r as any).invoiced ? '#fff' : 'var(--color-text-tertiary)', whiteSpace: 'nowrap' }}
-                                            >
-                                                {(r as any).invoiced ? '請求済 ✓' : '未請求'}
-                                            </button>
+                                            <div onClick={e => { e.stopPropagation(); handleReqToggleInvoiced(r) }} style={{ display: 'inline-flex', width: 36, height: 20, borderRadius: 10, background: (r as any).invoiced ? 'var(--color-brand)' : 'var(--color-border)', cursor: 'pointer', transition: 'background 0.25s', position: 'relative', alignItems: 'center', flexShrink: 0 }}>
+                                                <div style={{ position: 'absolute', left: (r as any).invoiced ? 18 : 2, width: 16, height: 16, borderRadius: '50%', background: '#fff', transition: 'left 0.25s', boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }} />
+                                            </div>
                                         </div>
                                     </div>
                                 ))}
