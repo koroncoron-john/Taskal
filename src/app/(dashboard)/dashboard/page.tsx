@@ -102,7 +102,7 @@ export default function DashboardPage() {
                             <div key={p.id} className={styles.projectRow}>
                                 <div className={styles.projectInfo}>
                                     <span className={styles.projectName}>{p.name} - {p.client}</span>
-                                    <span className="text-caption">{p.phase}</span>
+                                    <span className={`text-caption ${styles.projectPhase}`}>{p.phase}</span>
                                 </div>
                                 <div className="progress-bar">
                                     <div className="progress-bar-fill" style={{ width: `${phaseProgress[p.phase] || 0}%` }} />

@@ -91,12 +91,21 @@
 .projectInfo {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
+    gap: 8px;
 }
 
 .projectName {
     font-size: var(--font-size-body);
     color: var(--color-text-primary);
+    word-break: break-word;
+    flex: 1;
+    min-width: 0;
+}
+
+.projectPhase {
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 /* Matrix */
