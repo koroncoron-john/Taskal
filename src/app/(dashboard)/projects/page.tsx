@@ -348,7 +348,7 @@ export default function ProjectsPage() {
                                         <option value="active">Active</option>
                                         <option value="inactive">Inactive</option>
                                     </select>
-                                    <label>Invoice</label>
+                                    <label>Complete</label>
                                     <div onClick={() => setFormInvoiced(!formInvoiced)} style={{ display: 'inline-flex', width: 44, height: 24, borderRadius: 12, background: formInvoiced ? 'var(--color-brand)' : 'var(--color-border)', cursor: 'pointer', transition: 'background 0.25s', position: 'relative', alignItems: 'center', flexShrink: 0 }}>
                                         <div style={{ position: 'absolute', left: formInvoiced ? 22 : 2, width: 20, height: 20, borderRadius: '50%', background: '#fff', transition: 'left 0.25s', boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }} />
                                     </div>
@@ -376,7 +376,7 @@ export default function ProjectsPage() {
                                             <input type="number" className="select" value={reqBudget} onChange={e => setReqBudget(Number(e.target.value))} style={{ backgroundImage: 'none', cursor: 'text' }} />
                                             <label>Deadline</label>
                                             <DateInput value={reqDeadline} onChange={setReqDeadline} />
-                                            <label>Invoice</label>
+                                            <label>Complete</label>
                                             <div onClick={() => setReqInvoiced(!reqInvoiced)} style={{ display: 'inline-flex', width: 36, height: 20, borderRadius: 10, background: reqInvoiced ? 'var(--color-brand)' : 'var(--color-border)', cursor: 'pointer', transition: 'background 0.25s', position: 'relative', alignItems: 'center', flexShrink: 0 }}>
                                                 <div style={{ position: 'absolute', left: reqInvoiced ? 18 : 2, width: 16, height: 16, borderRadius: '50%', background: '#fff', transition: 'left 0.25s', boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }} />
                                             </div>

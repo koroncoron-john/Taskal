@@ -237,6 +237,10 @@ select:focus {
     background-color: var(--color-dot-urgent);
 }
 
+.dot-q3 {
+    background-color: #F59E0B;
+}
+
 .dot-important {
     background-color: var(--color-dot-important);
 }
