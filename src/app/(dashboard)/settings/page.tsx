@@ -3,11 +3,13 @@
 export const dynamic = 'force-dynamic'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import styles from '../tasks/page.module.css'
 
 export default function SettingsPage() {
     const supabase = createClient()
+    const router = useRouter()
     const [email, setEmail] = useState('')
     const [displayName, setDisplayName] = useState('')
     const [newPassword, setNewPassword] = useState('')
@@ -117,6 +119,16 @@ export default function SettingsPage() {
                             {loading ? '更新中...' : 'パスワードを変更'}
                         </button>
                     </div>
+                </div>
+
+                {/* ログアウト */}
+                <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 12, padding: 24 }}>
+                    <button
+                        onClick={async () => { await supabase.auth.signOut(); router.replace('/login') }}
+                        style={{ width: '100%', padding: '14px', background: 'none', border: '1px solid var(--color-danger)', borderRadius: 8, color: 'var(--color-danger)', cursor: 'pointer', fontSize: 15, fontWeight: 600, letterSpacing: '0.05em' }}
+                    >
+                        LOGOUT
+                    </button>
                 </div>
             </div>
         </div>

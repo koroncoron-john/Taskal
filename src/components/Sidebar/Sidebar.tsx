@@ -173,12 +173,6 @@ export default function Sidebar({ collapsed }: SidebarProps) {
                                 <span>{userName}</span>
                             </Link>
                         </div>
-                        <button
-                            onClick={() => { handleLogout(); setMobileOpen(false) }}
-                            style={{ width: '100%', marginTop: 12, padding: '12px', background: 'none', border: '1px solid var(--color-border)', borderRadius: 8, color: 'var(--color-danger)', cursor: 'pointer', fontSize: 14, fontWeight: 500 }}
-                        >
-                            Log out
-                        </button>
                     </div>
                 </div>
             )}

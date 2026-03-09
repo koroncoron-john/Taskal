@@ -56,23 +56,27 @@ export default function DashboardPage() {
             .select('id, title, deadline, invoiced, projects(name)')
             .eq('invoiced', false)
 
-        const projVirtual: VirtualTask[] = (activeProjects || []).map((p: any) => ({
-            id: `proj-${p.id}`,
-            title: `${p.name}${p.client ? ` - ${p.client}` : ''}`,
-            priority: 'urgent_important' as const,
-            due: p.deadline || null,
-            project: p.name,
-            type: 'project' as const,
-        }))
+        const projVirtual: VirtualTask[] = (activeProjects || [])
+            .filter((p: any) => p.deadline && p.deadline <= today)
+            .map((p: any) => ({
+                id: `proj-${p.id}`,
+                title: `${p.name}${p.client ? ` - ${p.client}` : ''}`,
+                priority: 'urgent_important' as const,
+                due: p.deadline || null,
+                project: p.name,
+                type: 'project' as const,
+            }))
 
-        const reqVirtual: VirtualTask[] = (reqs || []).map((r: any) => ({
-            id: `req-${r.id}`,
-            title: r.title,
-            priority: 'urgent_important' as const,
-            due: r.deadline || null,
-            project: r.projects?.name || '',
-            type: 'requirement' as const,
-        }))
+        const reqVirtual: VirtualTask[] = (reqs || [])
+            .filter((r: any) => r.deadline && r.deadline <= today)
+            .map((r: any) => ({
+                id: `req-${r.id}`,
+                title: r.title,
+                priority: 'urgent_important' as const,
+                due: r.deadline || null,
+                project: r.projects?.name || '',
+                type: 'requirement' as const,
+            }))
 
         setVirtualTasks([...projVirtual, ...reqVirtual])
         setLoading(false)
