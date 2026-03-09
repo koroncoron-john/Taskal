@@ -113,21 +113,10 @@ export default function Sidebar({ collapsed }: SidebarProps) {
                     ))}
                 </nav>
 
-                <div className={styles.userArea} onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}>
+                <Link href="/settings" className={styles.userArea} style={{ textDecoration: 'none' }}>
                     <span className={styles.userAvatar}>{userInitial}</span>
                     {!collapsed && <span className={styles.userName}>{userName}</span>}
-                    {isUserMenuOpen && (
-                        <div className={styles.userMenu}>
-                            <Link href="/settings" className={styles.userMenuItem} onClick={() => setIsUserMenuOpen(false)}>
-                                Profile Settings
-                            </Link>
-                            <div className={styles.userMenuDivider} />
-                            <button className={styles.userMenuItem} style={{ color: 'var(--color-danger)' }} onClick={handleLogout}>
-                                Log out
-                            </button>
-                        </div>
-                    )}
-                </div>
+                </Link>
             </aside>
 
             {/* Mobile Header */}
