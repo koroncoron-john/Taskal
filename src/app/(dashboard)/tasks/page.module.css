@@ -23,6 +23,9 @@
     cursor: pointer;
     color: var(--color-text-secondary);
     transition: background-color 0.15s;
+    flex: 1;
+    text-align: center;
+    white-space: nowrap;
 }
 
 .tab:hover {
@@ -30,8 +33,13 @@
 }
 
 .tabActive {
-    background: var(--color-text-primary);
-    color: #fff;
+    background: var(--color-text-primary) !important;
+    color: #fff !important;
+}
+
+.tabActive:hover {
+    background: var(--color-text-primary) !important;
+    color: #fff !important;
 }
 
 .actions {

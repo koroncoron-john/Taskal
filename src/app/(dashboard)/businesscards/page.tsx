@@ -173,6 +173,17 @@ export default function BusinessCardsPage() {
                             <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
                         </svg> CSV Import
                     </button>
+                    <button className="btn btn-outline" title="CSVテンプレートをダウンロード" onClick={() => {
+                        const header = 'name,company,email,phone,memo,affinity,status\n'
+                        const example = '山田太郎,株式会社サンプル,sample@example.com,03-0000-0000,,3,Met\n'
+                        const blob = new Blob([header + example], { type: 'text/csv;charset=utf-8;' })
+                        const url = URL.createObjectURL(blob)
+                        const a = document.createElement('a')
+                        a.href = url; a.download = 'businesscards_template.csv'; a.click()
+                        URL.revokeObjectURL(url)
+                    }}>
+                        ↓ Template
+                    </button>
                     <input ref={csvInputRef} type="file" accept=".csv" onChange={handleCsvImport} style={{ display: 'none' }} />
                     <button className="btn btn-primary" onClick={openCreate}>＋ New Contact</button>
                 </div>

@@ -168,8 +168,18 @@ export default function Sidebar({ collapsed }: SidebarProps) {
                             ))}
                         </nav>
                         <div className={styles.slideUser}>
-                            <span className={styles.userAvatar}>{userInitial}</span>
-                            <span>{userName}</span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                <span className={styles.userAvatar}>{userInitial}</span>
+                                <span>{userName}</span>
+                            </div>
+                            <div style={{ display: 'flex', gap: 8, marginTop: 12, borderTop: '1px solid var(--color-border)', paddingTop: 12 }}>
+                                <Link href="/settings" className={styles.slideNavItem} onClick={() => setMobileOpen(false)} style={{ flex: 1, fontSize: 14, padding: '10px 12px' }}>
+                                    ⚙️ Settings
+                                </Link>
+                                <button onClick={() => { handleLogout(); setMobileOpen(false) }} className={styles.slideNavItem} style={{ flex: 1, fontSize: 14, padding: '10px 12px', textAlign: 'center', color: 'var(--color-danger)', background: 'none', border: 'none', cursor: 'pointer' }}>
+                                    Log out
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

@@ -91,7 +91,7 @@ export default function ClientsPage() {
             </div>
 
             {/* テーブル */}
-            <div className={styles.tableWrapper}>
+            <div className={styles.tableWrap}>
                 <table className={styles.table}>
                     <thead>
                         <tr>

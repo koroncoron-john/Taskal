@@ -50,7 +50,11 @@ export default function DashboardPage() {
         other: tasks.filter(t => t.priority === 'other').length,
     }
 
-    const todayTasks = tasks.slice(0, 5)
+    const priorityOrder: Record<string, number> = { urgent_important: 0, important: 1, urgent: 2, other: 3 }
+    const today = new Date().toISOString().slice(0, 10)
+    const todayTasks = tasks
+        .filter(t => !t.due || t.due <= today)
+        .sort((a, b) => (priorityOrder[a.priority] ?? 3) - (priorityOrder[b.priority] ?? 3))
 
     const priorityDotClass = (p: string) => {
         if (p === 'urgent_important' || p === 'urgent') return 'dot-urgent'
