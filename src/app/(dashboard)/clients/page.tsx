@@ -166,6 +166,7 @@ export default function ClientsPage() {
                             )}
                         </div>
                     </div>
+                </div>
             </SlidePanel>
         </div>
     )
