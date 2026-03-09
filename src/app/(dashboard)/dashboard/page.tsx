@@ -86,8 +86,14 @@ export default function DashboardPage() {
     useEffect(() => { fetchAll() }, [])
 
     const handleCheckTask = async (taskId: string) => {
-        setDoneTaskIds(prev => new Set([...prev, taskId]))
-        await supabase.from('tasks').update({ status: '完了' }).eq('id', taskId)
+        const isDone = doneTaskIds.has(taskId)
+        setDoneTaskIds(prev => {
+            const next = new Set(prev)
+            if (isDone) next.delete(taskId)
+            else next.add(taskId)
+            return next
+        })
+        await supabase.from('tasks').update({ status: isDone ? '未着手' : '完了' }).eq('id', taskId)
     }
 
     const priorityOrder: Record<string, number> = { urgent_important: 0, important: 1, urgent: 2, other: 3 }

@@ -103,8 +103,9 @@ export default function TasksPage() {
         const task = tasks.find(t => t.id === taskId)
         if (!task) return
         const newStatus = task.status === '完了' ? '未着手' : '完了'
+        // optimistic update: ローカルを先に更新してチカチカを防ぐ
+        setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus } : t))
         await supabase.from('tasks').update({ status: newStatus }).eq('id', taskId)
-        fetchTasks()
     }
 
     const openCreatePanel = () => {
