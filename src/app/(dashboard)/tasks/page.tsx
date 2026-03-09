@@ -165,24 +165,13 @@ export default function TasksPage() {
 
             {loading ? <p className="text-secondary" style={{ padding: 24 }}>読み込み中...</p> : viewMode === 'list' ? (
                 <>
+                    {/* ── 手動タスク ── */}
                     <div className={styles.tableWrap}><table className={styles.table}>
                         <thead><tr>
                             <th style={{ width: 40 }}></th>
                             <th>Task Name</th><th>Priority</th><th>Project</th><th>Due Date</th><th>Status</th>
                         </tr></thead>
                         <tbody>
-                            {/* プロジェクト・追加要件（仮想タスク） */}
-                            {virtualItems.map(v => (
-                                <tr key={v.id} style={{ background: 'rgba(var(--color-brand-rgb, 34,197,94), 0.04)' }}>
-                                    <td className={styles.tdCheck}><span style={{ display: 'inline-block', width: 16, height: 16 }} /></td>
-                                    <td className={styles.tdName}>{typeBadge(v.type)}{v.title}</td>
-                                    <td><span className="dot dot-urgent" /> 緊急×重要</td>
-                                    <td className="text-secondary">{v.project || '—'}</td>
-                                    <td className="text-mono text-secondary">{v.due || '—'}</td>
-                                    <td>{v.status}</td>
-                                </tr>
-                            ))}
-                            {/* 通常タスク */}
                             {tasks.map(t => (
                                 <tr key={t.id} style={t.status === '完了' ? { opacity: 0.5, textDecoration: 'line-through' } : {}}>
                                     <td className={styles.tdCheck}><input type="checkbox" className="checkbox" checked={t.status === '完了'} onChange={() => handleCheck(t.id)} title="完了にする" style={{ accentColor: 'var(--color-brand)' }} /></td>
@@ -193,15 +182,42 @@ export default function TasksPage() {
                                     <td>{t.status}</td>
                                 </tr>
                             ))}
-                            {tasks.length === 0 && virtualItems.length === 0 && filterStatus === 'all' && (
-                                <tr><td colSpan={6} style={{ textAlign: 'center', padding: '48px 24px', color: 'var(--color-text-tertiary)', fontSize: 14 }}>No tasks yet. Add one from "+ New Task".</td></tr>
+                            {tasks.length === 0 && filterStatus === 'all' && (
+                                <tr><td colSpan={6} style={{ textAlign: 'center', padding: '32px 24px', color: 'var(--color-text-tertiary)', fontSize: 14 }}>No tasks yet. Add one from "+ New Task".</td></tr>
                             )}
                             {tasks.length === 0 && filterStatus !== 'all' && (
-                                <tr><td colSpan={6} style={{ textAlign: 'center', padding: '48px 24px', color: 'var(--color-text-tertiary)', fontSize: 14 }}>No data matching your filter criteria.</td></tr>
+                                <tr><td colSpan={6} style={{ textAlign: 'center', padding: '32px 24px', color: 'var(--color-text-tertiary)', fontSize: 14 }}>No data matching your filter criteria.</td></tr>
                             )}
                         </tbody>
                     </table></div>
-                    <div className={styles.pagination}>{tasks.length + virtualItems.length} items</div>
+                    <div className={styles.pagination}>{tasks.length} tasks</div>
+
+                    {/* ── Project Tasks ── */}
+                    <div style={{ marginTop: 32 }}>
+                        <h2 className="text-section-label" style={{ padding: '0 0 12px 0', fontSize: 13, letterSpacing: '0.08em' }}>PROJECT TASKS</h2>
+                        <div className={styles.tableWrap}><table className={styles.table}>
+                            <thead><tr>
+                                <th style={{ width: 40 }}></th>
+                                <th>Task Name</th><th>Priority</th><th>Project</th><th>Due Date</th><th>Status</th>
+                            </tr></thead>
+                            <tbody>
+                                {virtualItems.map(v => (
+                                    <tr key={v.id}>
+                                        <td className={styles.tdCheck}><span style={{ display: 'inline-block', width: 16, height: 16 }} /></td>
+                                        <td className={styles.tdName}>{typeBadge(v.type)}{v.title}</td>
+                                        <td><span className="dot dot-urgent" /> 緊急×重要</td>
+                                        <td className="text-secondary">{v.project || '—'}</td>
+                                        <td className="text-mono text-secondary">{v.due || '—'}</td>
+                                        <td>{v.status}</td>
+                                    </tr>
+                                ))}
+                                {virtualItems.length === 0 && (
+                                    <tr><td colSpan={6} style={{ textAlign: 'center', padding: '32px 24px', color: 'var(--color-text-tertiary)', fontSize: 14 }}>No active project tasks.</td></tr>
+                                )}
+                            </tbody>
+                        </table></div>
+                        <div className={styles.pagination}>{virtualItems.length} project tasks</div>
+                    </div>
                 </>
             ) : (
                 <div className={styles.matrix}>
