@@ -8,6 +8,7 @@ import Sidebar from '@/components/Sidebar/Sidebar'
 import styles from './layout.module.css'
 import { createClient } from '@/lib/supabase/client'
 import { ToastProvider } from '@/components/Toast/Toast'
+import UpdateBanner from '@/components/UpdateBanner/UpdateBanner'
 
 export default function DashboardLayout({
     children,
@@ -45,6 +46,7 @@ export default function DashboardLayout({
 
     return (
         <ToastProvider>
+            <UpdateBanner />
             <div className={styles.shell}>
                 <Sidebar collapsed={collapsed} />
                 <main className={`${styles.main} ${collapsed ? styles.mainCollapsed : ''}`}>
