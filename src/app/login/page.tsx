@@ -95,11 +95,12 @@ export default function LoginPage() {
             justifyContent: 'center',
             background: 'var(--color-bg)',
             fontFamily: 'var(--font-family)',
+            padding: '16px',
         }}>
             <div style={{
                 width: '100%',
                 maxWidth: 400,
-                padding: '48px 40px',
+                padding: '48px clamp(16px, 5vw, 40px)',
                 background: 'var(--color-surface)',
                 border: '1px solid var(--color-border)',
                 borderRadius: 16,
