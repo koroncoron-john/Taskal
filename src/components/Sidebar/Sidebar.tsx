@@ -168,19 +168,17 @@ export default function Sidebar({ collapsed }: SidebarProps) {
                             ))}
                         </nav>
                         <div className={styles.slideUser}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <Link href="/settings" onClick={() => setMobileOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', color: 'inherit' }}>
                                 <span className={styles.userAvatar}>{userInitial}</span>
                                 <span>{userName}</span>
-                            </div>
-                            <div style={{ display: 'flex', gap: 8, marginTop: 12, borderTop: '1px solid var(--color-border)', paddingTop: 12 }}>
-                                <Link href="/settings" className={styles.slideNavItem} onClick={() => setMobileOpen(false)} style={{ flex: 1, fontSize: 14, padding: '10px 12px' }}>
-                                    ⚙️ Settings
-                                </Link>
-                                <button onClick={() => { handleLogout(); setMobileOpen(false) }} className={styles.slideNavItem} style={{ flex: 1, fontSize: 14, padding: '10px 12px', textAlign: 'center', color: 'var(--color-danger)', background: 'none', border: 'none', cursor: 'pointer' }}>
-                                    Log out
-                                </button>
-                            </div>
+                            </Link>
                         </div>
+                        <button
+                            onClick={() => { handleLogout(); setMobileOpen(false) }}
+                            style={{ width: '100%', marginTop: 12, padding: '12px', background: 'none', border: '1px solid var(--color-border)', borderRadius: 8, color: 'var(--color-danger)', cursor: 'pointer', fontSize: 14, fontWeight: 500 }}
+                        >
+                            Log out
+                        </button>
                     </div>
                 </div>
             )}

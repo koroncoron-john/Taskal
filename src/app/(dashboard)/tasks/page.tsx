@@ -61,7 +61,7 @@ export default function TasksPage() {
 
         const projectItems: VirtualItem[] = (projects || []).map((p: any) => ({
             id: `proj-${p.id}`,
-            title: `[PJ] ${p.name}${p.client ? ` - ${p.client}` : ''}`,
+            title: `${p.name}${p.client ? ` - ${p.client}` : ''}`,
             priority: 'urgent_important' as const,
             due: p.deadline || null,
             project: p.name,
@@ -76,7 +76,7 @@ export default function TasksPage() {
 
         const reqItems: VirtualItem[] = (reqs || []).map((r: any) => ({
             id: `req-${r.id}`,
-            title: `[REQ] ${r.title}`,
+            title: r.title,
             priority: 'urgent_important' as const,
             due: r.deadline || null,
             project: r.projects?.name || '',

@@ -52,7 +52,6 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                         animation: 'toastIn 0.3s ease',
                         pointerEvents: 'auto',
                     }}>
-                        {t.type === 'success' ? '✅ ' : t.type === 'error' ? '❌ ' : 'ℹ️ '}
                         {t.message}
                     </div>
                 ))}
