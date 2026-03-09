@@ -27,6 +27,7 @@ export default function DashboardPage() {
     const [virtualTasks, setVirtualTasks] = useState<VirtualTask[]>([])
     const [loading, setLoading] = useState(true)
     const [displayName, setDisplayName] = useState('')
+    const [doneTaskIds, setDoneTaskIds] = useState<Set<string>>(new Set())
     const [greeting] = useState(() => {
         const greetings = ['おはようございます', 'お疲れ様です', 'こんにちは', '今日も頑張りましょう', 'お手伝いします']
         return greetings[Math.floor(Math.random() * greetings.length)]
@@ -85,8 +86,8 @@ export default function DashboardPage() {
     useEffect(() => { fetchAll() }, [])
 
     const handleCheckTask = async (taskId: string) => {
+        setDoneTaskIds(prev => new Set([...prev, taskId]))
         await supabase.from('tasks').update({ status: '完了' }).eq('id', taskId)
-        fetchAll()
     }
 
     const priorityOrder: Record<string, number> = { urgent_important: 0, important: 1, urgent: 2, other: 3 }
@@ -140,8 +141,8 @@ export default function DashboardPage() {
                             There are no tasks for today 🎉
                         </p>
                     ) : todayTasks.map((task) => (
-                        <div key={task.id} className={styles.taskRow}>
-                            <input type="checkbox" className="checkbox" onChange={() => handleCheckTask(task.id)} />
+                        <div key={task.id} className={styles.taskRow} style={doneTaskIds.has(task.id) ? { opacity: 0.45, textDecoration: 'line-through' } : {}}>
+                            <input type="checkbox" className="checkbox" checked={doneTaskIds.has(task.id)} onChange={() => handleCheckTask(task.id)} />
                             <span className={`dot ${priorityDotClass(task.priority)}`} />
                             <span className={styles.taskName}>{task.title}</span>
                             <span className={styles.taskMeta}>
