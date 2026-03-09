@@ -91,11 +91,12 @@ export default function LoginPage() {
         <div style={{
             minHeight: '100vh',
             display: 'flex',
-            alignItems: 'center',
+            alignItems: 'flex-start',
             justifyContent: 'center',
             background: 'var(--color-bg)',
             fontFamily: 'var(--font-family)',
             padding: '16px',
+            paddingTop: 'clamp(64px, 10vw, 128px)',
         }}>
             <div style={{
                 width: '100%',
@@ -132,16 +133,15 @@ export default function LoginPage() {
                             onClick={() => switchMode(m)}
                             style={{
                                 flex: 1,
-                                padding: '7px 0',
+                                padding: '8px 0',
                                 fontSize: 13,
                                 fontWeight: mode === m ? 600 : 400,
-                                background: mode === m ? 'var(--color-surface)' : 'transparent',
-                                color: mode === m ? 'var(--color-text-primary)' : 'var(--color-text-tertiary)',
+                                background: mode === m ? 'var(--color-brand)' : 'transparent',
+                                color: mode === m ? '#fff' : 'var(--color-text-tertiary)',
                                 border: 'none',
                                 borderRadius: 6,
                                 cursor: 'pointer',
-                                boxShadow: mode === m ? '0 1px 4px rgba(0,0,0,0.12)' : 'none',
-                                transition: 'all 0.15s',
+                                transition: 'all 0.2s',
                             }}
                         >
                             {m === 'login' ? 'ログイン' : '新規登録'}
