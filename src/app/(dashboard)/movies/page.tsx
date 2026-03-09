@@ -61,9 +61,8 @@ export default function MoviesPage() {
     }
 
     const handleSave = async () => {
-        const { data: { user } } = await supabase.auth.getUser()
         const p: any = { title: formTitle, youtube_url: formYoutubeUrl, status: formStatus, description: formDescription }
-        if (panelMode === 'create') await supabase.from('movies').insert({ ...p, user_id: user?.id })
+        if (panelMode === 'create') await supabase.from('movies').insert(p)
         else if (editing) await supabase.from('movies').update(p).eq('id', editing.id)
         setIsPanelOpen(false); fetchMovies()
     }

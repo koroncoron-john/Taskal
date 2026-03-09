@@ -30,6 +30,7 @@ export default function ClientsPage() {
     const [formPhone, setFormPhone] = useState('')
     const [formMemo, setFormMemo] = useState('')
     const [saving, setSaving] = useState(false)
+    const [saveError, setSaveError] = useState('')
 
     const fetchClients = async () => {
         const { data } = await supabase.from('clients').select('*').order('created_at', { ascending: false })
@@ -52,6 +53,7 @@ export default function ClientsPage() {
 
     const handleSave = async () => {
         setSaving(true)
+        setSaveError('')
         const payload = {
             name: formName,
             contact_name: formContact,
@@ -60,10 +62,11 @@ export default function ClientsPage() {
             memo: formMemo,
         }
         if (selected) {
-            await supabase.from('clients').update(payload).eq('id', selected.id)
+            const { error } = await supabase.from('clients').update(payload).eq('id', selected.id)
+            if (error) { setSaveError('更新エラー: ' + error.message); setSaving(false); return }
         } else {
-            const { data: { user } } = await supabase.auth.getUser()
-            await supabase.from('clients').insert({ ...payload, user_id: user?.id })
+            const { error } = await supabase.from('clients').insert(payload)
+            if (error) { setSaveError('登録エラー: ' + error.message); setSaving(false); return }
         }
         await fetchClients()
         setSaving(false)
@@ -145,18 +148,24 @@ export default function ClientsPage() {
                             style={{ backgroundImage: 'none', cursor: 'text', resize: 'vertical', fontFamily: 'inherit', padding: '8px 12px' }} />
                     </div>
 
-                    <div style={{ display: 'flex', gap: 8, paddingTop: 8 }}>
-                        <button className="btn btn-primary" onClick={handleSave} disabled={!formName || saving}>
-                            {saving ? '保存中...' : selected ? 'Save changes' : 'Create'}
-                        </button>
-                        {selected && (
-                            <button className="btn" onClick={handleDelete}
-                                style={{ color: 'var(--color-danger)', borderColor: 'var(--color-danger)' }}>
-                                Delete
-                            </button>
+                    <div style={{ display: 'flex', gap: 8, paddingTop: 8, flexDirection: 'column' }}>
+                        {saveError && (
+                            <p style={{ fontSize: 13, color: 'var(--color-danger)', padding: '8px 12px', background: 'rgba(239,68,68,0.08)', borderRadius: 8, margin: 0 }}>
+                                ⚠️ {saveError}
+                            </p>
                         )}
+                        <div style={{ display: 'flex', gap: 8 }}>
+                            <button className="btn btn-primary" onClick={handleSave} disabled={!formName || saving}>
+                                {saving ? '保存中...' : selected ? 'Save changes' : 'Create'}
+                            </button>
+                            {selected && (
+                                <button className="btn" onClick={handleDelete}
+                                    style={{ color: 'var(--color-danger)', borderColor: 'var(--color-danger)' }}>
+                                    Delete
+                                </button>
+                            )}
+                        </div>
                     </div>
-                </div>
             </SlidePanel>
         </div>
     )

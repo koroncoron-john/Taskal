@@ -156,8 +156,7 @@ export default function ProjectsPage() {
     }
 
     const handleCreate = async () => {
-        const { data: { user } } = await supabase.auth.getUser()
-        const { data } = await supabase.from('projects').insert({ name: 'New Project', client: '', pm: '', phase: '提案', budget: 0, is_active: true, maintenance_cost: 0, user_id: user?.id }).select().single()
+        const { data } = await supabase.from('projects').insert({ name: 'New Project', client: '', pm: '', phase: '提案', budget: 0, is_active: true, maintenance_cost: 0 }).select().single()
         const list = await supabase.from('projects').select('*').order('created_at', { ascending: false })
         setProjects(list.data || [])
         if (data) { setSelected(data); fillForm(data) }

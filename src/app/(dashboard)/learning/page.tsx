@@ -40,8 +40,7 @@ export default function LearningPage() {
     const handleSave = async () => {
         const p = { title: formTitle, category: formCategory, content: formContent, status: formStatus }
         if (panelMode === 'create') {
-            const { data: { user } } = await supabase.auth.getUser()
-            await supabase.from('learning_notes').insert({ ...p, user_id: user?.id })
+            await supabase.from('learning_notes').insert(p)
         } else if (editing) { await supabase.from('learning_notes').update(p).eq('id', editing.id) }
         setIsPanelOpen(false); fetchNotes()
     }

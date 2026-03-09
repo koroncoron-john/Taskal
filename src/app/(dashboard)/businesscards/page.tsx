@@ -67,8 +67,7 @@ export default function BusinessCardsPage() {
             memo: formMemo,
         }
         if (panelMode === 'create') {
-            const { data: { user } } = await supabase.auth.getUser()
-            await supabase.from('business_cards').insert({ ...p, user_id: user?.id })
+            await supabase.from('business_cards').insert(p)
         } else if (editing) await supabase.from('business_cards').update(p).eq('id', editing.id)
         setIsPanelOpen(false); fetchCards()
     }
