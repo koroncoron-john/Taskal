@@ -76,7 +76,11 @@ export default function DashboardPage() {
             <section className={styles.card}>
                 <h2 className={styles.sectionTitle}>今日のタスク</h2>
                 <div className={styles.taskList}>
-                    {todayTasks.map((task) => (
+                    {todayTasks.length === 0 ? (
+                        <p className="text-secondary" style={{ padding: '16px 0', margin: 0, fontSize: 14 }}>
+                            There are no tasks for today 🎉
+                        </p>
+                    ) : todayTasks.map((task) => (
                         <div key={task.id} className={styles.taskRow}>
                             <input type="checkbox" className="checkbox" onChange={() => handleCheckTask(task.id)} />
                             <span className={`dot ${priorityDotClass(task.priority)}`} />
