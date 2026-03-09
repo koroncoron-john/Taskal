@@ -340,7 +340,7 @@ export default function ProjectsPage() {
                                         <option value="inactive">Inactive</option>
                                     </select>
                                     <label>Invoice</label>
-                                    <div style={{ display: 'flex', gap: 8 }}>
+                                    <div style={{ display: 'flex', gap: 8, maxWidth: 160 }}>
                                         <button type="button" onClick={() => setFormInvoiced(false)} style={{ flex: 1, padding: '8px', border: '1px solid var(--color-border)', borderRadius: 'var(--border-radius)', background: !formInvoiced ? 'var(--color-text-primary)' : 'var(--color-bg)', color: !formInvoiced ? '#fff' : 'var(--color-text-secondary)', cursor: 'pointer', fontSize: 13 }}>未請求</button>
                                         <button type="button" onClick={() => setFormInvoiced(true)} style={{ flex: 1, padding: '8px', border: '1px solid var(--color-border)', borderRadius: 'var(--border-radius)', background: formInvoiced ? '#22c55e' : 'var(--color-bg)', color: formInvoiced ? '#fff' : 'var(--color-text-secondary)', cursor: 'pointer', fontSize: 13 }}>請求済み ✓</button>
                                     </div>
@@ -369,7 +369,7 @@ export default function ProjectsPage() {
                                             <label>Deadline</label>
                                             <DateInput value={reqDeadline} onChange={setReqDeadline} />
                                             <label>Invoice</label>
-                                            <div style={{ display: 'flex', gap: 8 }}>
+                                            <div style={{ display: 'flex', gap: 8, maxWidth: 160 }}>
                                                 <button type="button" onClick={() => setReqInvoiced(false)} style={{ flex: 1, padding: '6px', border: '1px solid var(--color-border)', borderRadius: 'var(--border-radius)', background: !reqInvoiced ? 'var(--color-text-primary)' : 'var(--color-bg)', color: !reqInvoiced ? '#fff' : 'var(--color-text-secondary)', cursor: 'pointer', fontSize: 12 }}>未請求</button>
                                                 <button type="button" onClick={() => setReqInvoiced(true)} style={{ flex: 1, padding: '6px', border: '1px solid var(--color-border)', borderRadius: 'var(--border-radius)', background: reqInvoiced ? '#22c55e' : 'var(--color-bg)', color: reqInvoiced ? '#fff' : 'var(--color-text-secondary)', cursor: 'pointer', fontSize: 12 }}>請求済み ✓</button>
                                             </div>
