@@ -121,7 +121,7 @@ export default function SettingsPage() {
                 <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 12, padding: 24 }}>
                     <button
                         onClick={async () => { await supabase.auth.signOut(); router.replace('/login') }}
-                        style={{ width: '100%', padding: '14px', background: 'none', border: '1px solid var(--color-danger)', borderRadius: 8, color: 'var(--color-danger)', cursor: 'pointer', fontSize: 15, fontWeight: 600, letterSpacing: '0.05em' }}
+                        style={{ width: '100%', padding: '14px', background: '#fff', border: '1px solid var(--color-danger)', borderRadius: 8, color: 'var(--color-danger)', cursor: 'pointer', fontSize: 15, fontWeight: 600, letterSpacing: '0.05em' }}
                     >
                         LOGOUT
                     </button>
