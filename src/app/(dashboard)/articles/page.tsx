@@ -16,6 +16,8 @@ export default function ArticlesPage() {
     const [articles, setArticles] = useState<Article[]>([])
     const [loading, setLoading] = useState(true)
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+    const [filterStatus, setFilterStatus] = useState<string>('all')
+    const [sortOrder, setSortOrder] = useState<string>('month_desc')
     const [isPanelOpen, setIsPanelOpen] = useState(false)
     const [panelMode, setPanelMode] = useState<'create' | 'edit'>('create')
     const [editing, setEditing] = useState<Article | null>(null)
@@ -36,6 +38,17 @@ export default function ArticlesPage() {
         setSelectedIds(new Set())
         setLoading(false)
     }, [])
+
+    // クライアントサイドでfilter/sort
+    const displayArticles = articles
+        .filter(a => filterStatus === 'all' || a.status === filterStatus)
+        .sort((a, b) => {
+            const mA = a.month || ''
+            const mB = b.month || ''
+            if (sortOrder === 'month_desc') return mB.localeCompare(mA)
+            if (sortOrder === 'month_asc') return mA.localeCompare(mB)
+            return 0
+        })
 
     useEffect(() => { fetchArticles() }, [fetchArticles])
 
@@ -157,7 +170,17 @@ export default function ArticlesPage() {
         <div>
             <div className={styles.header}>
                 <h1 className="text-page-title">Articles</h1>
-                <div className={styles.actions}>
+                <div className={styles.actions} style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <select className="select" style={{ width: 'auto', paddingRight: '28px' }} value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
+                        <option value="all">Filter: All</option>
+                        <option value="アイデア">アイデア</option>
+                        <option value="下書き">下書き</option>
+                        <option value="投稿済み">投稿済み</option>
+                    </select>
+                    <select className="select" style={{ width: 'auto', paddingRight: '28px' }} value={sortOrder} onChange={e => setSortOrder(e.target.value)}>
+                        <option value="month_desc">Month: 新しい順</option>
+                        <option value="month_asc">Month: 古い順</option>
+                    </select>
                     {selectedIds.size > 0 && <button className="btn btn-outline" style={{ color: 'var(--color-danger)', borderColor: 'var(--color-danger)' }} onClick={handleBulkDelete}>🗑 Delete ({selectedIds.size})</button>}
                     <button className="btn btn-outline" onClick={handleCsvExport} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
@@ -173,7 +196,7 @@ export default function ArticlesPage() {
                         <th style={{ width: 60 }}></th>
                         <th>Title</th><th>Platform</th><th>Status</th><th>Month</th>
                     </tr></thead>
-                    <tbody>{articles.map(a => (
+                    <tbody>{displayArticles.map(a => (
                         <tr key={a.id}>
                             <td className={styles.tdCheck}><input type="checkbox" className="checkbox" checked={selectedIds.has(a.id)} onChange={() => toggleSelect(a.id)} /></td>
                             <td style={{ padding: '4px 8px' }}>
@@ -195,7 +218,7 @@ export default function ArticlesPage() {
                             <td className="text-mono text-secondary">{a.month || '—'}</td>
                         </tr>
                     ))}
-                        {articles.length === 0 && (
+                        {displayArticles.length === 0 && (
                             <tr><td colSpan={6} style={{ textAlign: 'center', padding: '48px 24px', color: 'var(--color-text-tertiary)', fontSize: 14 }}>No articles yet. Add one from "+ New Article".</td></tr>
                         )}
                     </tbody></table></div><div className={styles.pagination}>{articles.length} articles</div></>
