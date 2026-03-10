@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import styles from '../tasks/page.module.css'
 import SlidePanel from '@/components/SlidePanel/SlidePanel'
+import { useToast } from '@/components/Toast/Toast'
 
 interface Client {
     id: string
@@ -19,6 +20,7 @@ interface Client {
 
 export default function ClientsPage() {
     const supabase = createClient()
+    const { showToast } = useToast()
     const [clients, setClients] = useState<Client[]>([])
     const [selected, setSelected] = useState<Client | null>(null)
     const [panelOpen, setPanelOpen] = useState(false)
@@ -30,7 +32,6 @@ export default function ClientsPage() {
     const [formPhone, setFormPhone] = useState('')
     const [formMemo, setFormMemo] = useState('')
     const [saving, setSaving] = useState(false)
-    const [saveError, setSaveError] = useState('')
 
     const fetchClients = async () => {
         const { data } = await supabase.from('clients').select('*').order('created_at', { ascending: false })
@@ -53,7 +54,6 @@ export default function ClientsPage() {
 
     const handleSave = async () => {
         setSaving(true)
-        setSaveError('')
         const payload = {
             name: formName,
             contact_name: formContact,
@@ -63,10 +63,12 @@ export default function ClientsPage() {
         }
         if (selected) {
             const { error } = await supabase.from('clients').update(payload).eq('id', selected.id)
-            if (error) { setSaveError('更新エラー: ' + error.message); setSaving(false); return }
+            if (error) { showToast('更新エラー: ' + error.message, 'error'); setSaving(false); return }
+            showToast(`「${formName}」を更新しました`, 'success')
         } else {
             const { error } = await supabase.from('clients').insert(payload)
-            if (error) { setSaveError('登録エラー: ' + error.message); setSaving(false); return }
+            if (error) { showToast('登録エラー: ' + error.message, 'error'); setSaving(false); return }
+            showToast(`「${formName}」を登録しました`, 'success')
         }
         await fetchClients()
         setSaving(false)
@@ -149,11 +151,8 @@ export default function ClientsPage() {
                     </div>
 
                     <div style={{ display: 'flex', gap: 8, paddingTop: 8, flexDirection: 'column' }}>
-                        {saveError && (
-                            <p style={{ fontSize: 13, color: 'var(--color-danger)', padding: '8px 12px', background: 'rgba(239,68,68,0.08)', borderRadius: 8, margin: 0 }}>
-                                ⚠️ {saveError}
-                            </p>
-                        )}
+
+
                         <div style={{ display: 'flex', gap: 8 }}>
                             <button className="btn btn-primary" onClick={handleSave} disabled={!formName || saving}>
                                 {saving ? '保存中...' : selected ? 'Save changes' : 'Create'}

@@ -8,9 +8,11 @@ import SlidePanel from '../../../components/SlidePanel/SlidePanel'
 import DateInput from '../../../components/DateInput/DateInput'
 import { createClient } from '../../../lib/supabase/client'
 import type { BusinessCard } from '../../../types/database'
+import { useToast } from '@/components/Toast/Toast'
 
 export default function BusinessCardsPage() {
     const supabase = createClient()
+    const { showToast } = useToast()
     const [cards, setCards] = useState<BusinessCard[]>([])
     const [loading, setLoading] = useState(true)
     const [isPanelOpen, setIsPanelOpen] = useState(false)
@@ -25,7 +27,6 @@ export default function BusinessCardsPage() {
     const [formRegisteredDate, setFormRegisteredDate] = useState('')
     const [formMeetStatus, setFormMeetStatus] = useState('Not Met')
     const [formMemo, setFormMemo] = useState('')
-    const [importResult, setImportResult] = useState<string | null>(null)
     const csvInputRef = useRef<HTMLInputElement>(null)
 
     // Filter & Sort
@@ -83,7 +84,7 @@ export default function BusinessCardsPage() {
         if (!file) return
         const text = await file.text()
         const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0)
-        if (lines.length < 2) { setImportResult('CSVにデータ行がありません'); return }
+        if (lines.length < 2) { showToast('CSVにデータ行がありません', 'error'); return }
 
         // ヘッダー解析
         const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, '').toLowerCase())
@@ -118,10 +119,9 @@ export default function BusinessCardsPage() {
                 imported++
             }
         }
-        setImportResult(`${imported}件のコンタクトをインポートしました`)
+        showToast(`${imported}件のコンタクトをインポートしました`, 'success')
         fetchCards()
         if (csvInputRef.current) csvInputRef.current.value = ''
-        setTimeout(() => setImportResult(null), 4000)
     }
 
     const parseCSVRow = (row: string): string[] => {
@@ -189,11 +189,8 @@ export default function BusinessCardsPage() {
                 </div>
             </div>
 
-            {importResult && (
-                <div style={{ padding: '12px 24px', background: 'var(--color-success-bg, rgba(34,197,94,0.1))', color: 'var(--color-success, #22c55e)', borderRadius: 'var(--border-radius)', margin: '0 0 16px', fontWeight: 500 }}>
-                    ✅ {importResult}
-                </div>
-            )}
+
+
 
             {loading ? <p className="text-secondary" style={{ padding: 24 }}>読み込み中...</p> : (
                 <><div className={styles.tableWrap}><table className={styles.table}>

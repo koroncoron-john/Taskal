@@ -6,16 +6,18 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import styles from '../tasks/page.module.css'
+import { useToast } from '@/components/Toast/Toast'
 
 export default function SettingsPage() {
     const supabase = createClient()
     const router = useRouter()
+    const { showToast } = useToast()
     const [email, setEmail] = useState('')
     const [displayName, setDisplayName] = useState('')
     const [newPassword, setNewPassword] = useState('')
     const [confirmPassword, setConfirmPassword] = useState('')
-    const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
     const [loading, setLoading] = useState(false)
+    const [isGoogleUser, setIsGoogleUser] = useState(false)
 
     useEffect(() => {
         const getUser = async () => {
@@ -23,15 +25,13 @@ export default function SettingsPage() {
             if (user) {
                 setEmail(user.email || '')
                 setDisplayName(user.user_metadata?.full_name || user.email?.split('@')[0] || '')
+                // Google OAuthユーザー判定
+                const provider = user.app_metadata?.provider
+                setIsGoogleUser(provider === 'google')
             }
         }
         getUser()
     }, [])
-
-    const showMessage = (type: 'success' | 'error', text: string) => {
-        setMessage({ type, text })
-        setTimeout(() => setMessage(null), 4000)
-    }
 
     const handleUpdateProfile = async () => {
         setLoading(true)
@@ -39,25 +39,25 @@ export default function SettingsPage() {
             data: { full_name: displayName }
         })
         setLoading(false)
-        if (error) showMessage('error', 'プロフィールの更新に失敗しました')
-        else showMessage('success', 'プロフィールを更新しました')
+        if (error) showToast('プロフィールの更新に失敗しました', 'error')
+        else showToast('プロフィールを更新しました', 'success')
     }
 
     const handleUpdatePassword = async () => {
         if (newPassword !== confirmPassword) {
-            showMessage('error', 'パスワードが一致しません')
+            showToast('パスワードが一致しません', 'error')
             return
         }
         if (newPassword.length < 6) {
-            showMessage('error', 'パスワードは6文字以上で入力してください')
+            showToast('パスワードは6文字以上で入力してください', 'error')
             return
         }
         setLoading(true)
         const { error } = await supabase.auth.updateUser({ password: newPassword })
         setLoading(false)
-        if (error) showMessage('error', 'パスワードの更新に失敗しました')
+        if (error) showToast('パスワードの更新に失敗しました', 'error')
         else {
-            showMessage('success', 'パスワードを更新しました')
+            showToast('パスワードを更新しました', 'success')
             setNewPassword('')
             setConfirmPassword('')
         }
@@ -68,16 +68,6 @@ export default function SettingsPage() {
             <div className={styles.header}>
                 <h1 className="text-page-title">Profile Settings</h1>
             </div>
-
-            {message && (
-                <div style={{
-                    padding: '12px 24px', marginBottom: 16, borderRadius: 'var(--border-radius)', fontWeight: 500, fontSize: 14,
-                    background: message.type === 'success' ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.08)',
-                    color: message.type === 'success' ? '#22c55e' : 'var(--color-danger)',
-                }}>
-                    {message.type === 'success' ? '✅' : '⚠️'} {message.text}
-                </div>
-            )}
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 24, maxWidth: 560 }}>
                 {/* プロフィール */}
@@ -102,23 +92,29 @@ export default function SettingsPage() {
                 </div>
 
                 {/* パスワード変更 */}
-                <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 12, padding: 24 }}>
-                    <h2 style={{ fontSize: 15, fontWeight: 600, color: 'var(--color-text-primary)', marginBottom: 20 }}>パスワード変更</h2>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                        <div>
-                            <label className="text-section-label">New Password</label>
-                            <input type="password" className="select" value={newPassword} onChange={e => setNewPassword(e.target.value)}
-                                placeholder="••••••••" style={{ backgroundImage: 'none', cursor: 'text' }} />
+                <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 12, padding: 24, opacity: isGoogleUser ? 0.5 : 1, pointerEvents: isGoogleUser ? 'none' : 'auto' }}>
+                    <h2 style={{ fontSize: 15, fontWeight: 600, color: 'var(--color-text-primary)', marginBottom: isGoogleUser ? 8 : 20 }}>パスワード変更</h2>
+                    {isGoogleUser ? (
+                        <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', margin: 0 }}>
+                            Googleアカウントでログインしているため、パスワード変更は不要です。
+                        </p>
+                    ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                            <div>
+                                <label className="text-section-label">New Password</label>
+                                <input type="password" className="select" value={newPassword} onChange={e => setNewPassword(e.target.value)}
+                                    placeholder="••••••••" style={{ backgroundImage: 'none', cursor: 'text' }} />
+                            </div>
+                            <div>
+                                <label className="text-section-label">Confirm Password</label>
+                                <input type="password" className="select" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)}
+                                    placeholder="••••••••" style={{ backgroundImage: 'none', cursor: 'text' }} />
+                            </div>
+                            <button className="btn btn-primary" onClick={handleUpdatePassword} disabled={loading} style={{ alignSelf: 'flex-start' }}>
+                                {loading ? '更新中...' : 'パスワードを変更'}
+                            </button>
                         </div>
-                        <div>
-                            <label className="text-section-label">Confirm Password</label>
-                            <input type="password" className="select" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)}
-                                placeholder="••••••••" style={{ backgroundImage: 'none', cursor: 'text' }} />
-                        </div>
-                        <button className="btn btn-primary" onClick={handleUpdatePassword} disabled={loading} style={{ alignSelf: 'flex-start' }}>
-                            {loading ? '更新中...' : 'パスワードを変更'}
-                        </button>
-                    </div>
+                    )}
                 </div>
 
                 {/* ログアウト */}
