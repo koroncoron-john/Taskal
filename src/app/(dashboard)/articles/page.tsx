@@ -17,7 +17,7 @@ export default function ArticlesPage() {
     const [loading, setLoading] = useState(true)
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
     const [filterStatus, setFilterStatus] = useState<string>('all')
-    const [sortOrder, setSortOrder] = useState<string>('month_desc')
+    const [sortOrder, setSortOrder] = useState<string>('default')
     const [isPanelOpen, setIsPanelOpen] = useState(false)
     const [panelMode, setPanelMode] = useState<'create' | 'edit'>('create')
     const [editing, setEditing] = useState<Article | null>(null)
@@ -45,9 +45,9 @@ export default function ArticlesPage() {
         .sort((a, b) => {
             const mA = a.month || ''
             const mB = b.month || ''
-            if (sortOrder === 'month_desc') return mB.localeCompare(mA)
             if (sortOrder === 'month_asc') return mA.localeCompare(mB)
-            return 0
+            if (sortOrder === 'month_desc') return mB.localeCompare(mA)
+            return 0 // default: fetchの順番（created_at desc）をそのまま使用
         })
 
     useEffect(() => { fetchArticles() }, [fetchArticles])
@@ -178,8 +178,9 @@ export default function ArticlesPage() {
                         <option value="投稿済み">投稿済み</option>
                     </select>
                     <select className="select" style={{ width: 'auto', paddingRight: '28px' }} value={sortOrder} onChange={e => setSortOrder(e.target.value)}>
-                        <option value="month_desc">Month: 新しい順</option>
-                        <option value="month_asc">Month: 古い順</option>
+                        <option value="default">Sort: Default</option>
+                        <option value="month_asc">Month: 昇順</option>
+                        <option value="month_desc">Month: 降順</option>
                     </select>
                     {selectedIds.size > 0 && <button className="btn btn-outline" style={{ color: 'var(--color-danger)', borderColor: 'var(--color-danger)' }} onClick={handleBulkDelete}>🗑 Delete ({selectedIds.size})</button>}
                     <button className="btn btn-outline" onClick={handleCsvExport} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
