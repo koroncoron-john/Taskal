@@ -1,13 +1,12 @@
 'use client'
 
-export const dynamic = 'force-dynamic'
-
 import { useState, useEffect, useCallback, useRef } from 'react'
 import styles from './page.module.css'
 import DateInput from '../../../components/DateInput/DateInput'
 import { createClient } from '../../../lib/supabase/client'
 import type { Project } from '../../../types/database'
 import { useToast } from '../../../components/Toast/Toast'
+import { useData } from '../../../contexts/DataProvider'
 
 const phases = [
     { key: '提案', label: '提案' }, { key: '見積', label: '見積' }, { key: '開発', label: '開発' },
@@ -51,10 +50,14 @@ const formatDuration = (seconds: number) => {
 export default function ProjectsPage() {
     const supabase = createClient()
     const { showToast } = useToast()
-    const [projects, setProjects] = useState<Project[]>([])
-    const [selected, setSelected] = useState<Project | null>(null)
-    const [loading, setLoading] = useState(true)
 
+    // ── グローバルキャッシュから取得 ──
+    const { projects, clients, isLoading, addProject, updateProject, deleteProject } = useData()
+    const clientOptions = clients.map(c => ({ id: c.id, name: c.name }))
+
+    const [selected, setSelected] = useState<Project | null>(null)
+
+    // ── フォームState（選択中プロジェクトの編集用）──
     const [formName, setFormName] = useState('')
     const [formClient, setFormClient] = useState('')
     const [formPm, setFormPm] = useState('')
@@ -64,9 +67,8 @@ export default function ProjectsPage() {
     const [formIsActive, setFormIsActive] = useState(true)
     const [formMaintenanceCost, setFormMaintenanceCost] = useState(0)
     const [formInvoiced, setFormInvoiced] = useState(false)
-    const [clientOptions, setClientOptions] = useState<{ id: string, name: string }[]>([])
 
-    // 追加要件
+    // ── 追加要件（選択プロジェクト依存：ローカルfetch）──
     const [requirements, setRequirements] = useState<Requirement[]>([])
     const [reqTitle, setReqTitle] = useState('')
     const [reqBudget, setReqBudget] = useState(0)
@@ -75,19 +77,20 @@ export default function ProjectsPage() {
     const [reqEditing, setReqEditing] = useState<Requirement | null>(null)
     const [reqPanelOpen, setReqPanelOpen] = useState(false)
 
-    // タイマー
+    // ── タイマー ──
     const [timerRunning, setTimerRunning] = useState(false)
     const [timerSeconds, setTimerSeconds] = useState(0)
     const [workDescription, setWorkDescription] = useState('')
     const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
-    // 履歴
+    // ── 作業履歴（選択プロジェクト依存：ローカルfetch）──
     const [logs, setLogs] = useState<MaintenanceLog[]>([])
     const [logMonth, setLogMonth] = useState(() => {
         const now = new Date()
         return `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}`
     })
 
+    // タイマーインターバル
     useEffect(() => {
         if (timerRunning) {
             intervalRef.current = setInterval(() => setTimerSeconds(s => s + 1), 1000)
@@ -97,13 +100,14 @@ export default function ProjectsPage() {
         return () => { if (intervalRef.current) clearInterval(intervalRef.current) }
     }, [timerRunning])
 
+    // プロジェクト切り替え時にタイマーリセット
     useEffect(() => {
         setTimerRunning(false)
         setTimerSeconds(0)
         setWorkDescription('')
     }, [selected?.id])
 
-    // 履歴データfetch
+    // 作業履歴fetch（選択プロジェクト依存のためローカルfetch維持）
     const fetchLogs = useCallback(async (projectId: string, month: string) => {
         const startDate = `${month}-01`
         const [y, m] = month.split('-').map(Number)
@@ -122,6 +126,7 @@ export default function ProjectsPage() {
         if (selected?.id) fetchLogs(selected.id, logMonth)
     }, [selected?.id, logMonth, fetchLogs])
 
+    // 追加要件fetch（選択プロジェクト依存のためローカルfetch維持）
     const fetchRequirements = useCallback(async (projectId: string) => {
         const { data } = await supabase.from('project_requirements').select('*').eq('project_id', projectId).order('created_at')
         setRequirements(data || [])
@@ -132,25 +137,13 @@ export default function ProjectsPage() {
         else setRequirements([])
     }, [selected?.id, fetchRequirements])
 
-    const fetchProjects = useCallback(async () => {
-        setLoading(true)
-        const { data } = await supabase.from('projects').select('*').order('created_at', { ascending: false })
-        const list = data || []
-        setProjects(list)
-        if (!selected && list.length > 0) {
-            setSelected(list[0])
-            fillForm(list[0])
-        }
-        setLoading(false)
-    }, [])
-
-    useEffect(() => { fetchProjects() }, [fetchProjects])
-
+    // プロジェクトがContextから来たとき初期選択
     useEffect(() => {
-        supabase.from('clients').select('id, name').order('name').then(({ data }) => {
-            if (data) setClientOptions(data)
-        })
-    }, [])
+        if (!selected && projects.length > 0) {
+            setSelected(projects[0])
+            fillForm(projects[0])
+        }
+    }, [projects])
 
     const fillForm = (p: Project) => {
         setFormName(p.name)
@@ -175,34 +168,29 @@ export default function ProjectsPage() {
 
     const handleSave = async () => {
         if (!selected) return
-        await supabase.from('projects').update({
+        const payload = {
             name: formName, client: formClient, pm: formPm,
             phase: formPhase, budget: formBudget, deadline: formDeadline || null,
             is_active: formIsActive, maintenance_cost: formMaintenanceCost, invoiced: formInvoiced,
-        }).eq('id', selected.id)
+        }
+        await updateProject(selected.id, payload)
         showToast(`「${formName}」を保存しました`)
-
-        const { data } = await supabase.from('projects').select('*').order('created_at', { ascending: false })
-        const list = data || []
-        setProjects(list)
-        const updated = list.find((p: any) => p.id === selected.id)
-        if (updated) { setSelected(updated); fillForm(updated) }
     }
 
     const handleCreate = async () => {
-        const { data } = await supabase.from('projects').insert({ name: 'New Project', client: '', pm: '', phase: '提案', budget: 0, is_active: true, maintenance_cost: 0 }).select().single()
-        const list = await supabase.from('projects').select('*').order('created_at', { ascending: false })
-        setProjects(list.data || [])
-        if (data) { setSelected(data); fillForm(data) }
+        const newProject = await addProject({ name: 'New Project', client: '', pm: '', phase: '提案', budget: 0, is_active: true, maintenance_cost: 0 })
+        if (newProject) {
+            setSelected(newProject)
+            fillForm(newProject)
+        }
         showToast('新しいプロジェクトを作成しました')
     }
 
     const handleDelete = async () => {
         if (!selected) return
         if (!confirm(`"${selected.name}" を完全に削除しますか？\nこの操作は取り消せません。`)) return
-        await supabase.from('projects').delete().eq('id', selected.id)
+        await deleteProject(selected.id)
         setSelected(null)
-        fetchProjects()
     }
 
     // 追加要件 CRUD
@@ -288,7 +276,7 @@ export default function ProjectsPage() {
                 <button className="btn btn-primary" onClick={handleCreate}>＋ New Project</button>
             </div>
 
-            {loading ? (
+            {isLoading ? (
                 <p className="text-secondary" style={{ padding: 24 }}>読み込み中...</p>
             ) : (
                 <div className={styles.layout}>
@@ -366,7 +354,6 @@ export default function ProjectsPage() {
                                     <button className="btn btn-outline" style={{ fontSize: 12, padding: '4px 10px' }} onClick={openReqCreate}>+ Add</button>
                                 </div>
 
-                                {/* 追加要件インラインフォーム */}
                                 {reqPanelOpen && (
                                     <div style={{ padding: '12px 16px', border: '1px solid var(--color-brand)', borderRadius: 'var(--border-radius)', background: 'var(--color-surface)', marginBottom: 12 }}>
                                         <div className={styles.formGrid}>
@@ -389,7 +376,6 @@ export default function ProjectsPage() {
                                     </div>
                                 )}
 
-                                {/* 追加要件リスト */}
                                 {requirements.length === 0 ? (
                                     <p className="text-secondary" style={{ fontSize: 13, margin: 0 }}>追加要件はありません</p>
                                 ) : requirements.map(r => (

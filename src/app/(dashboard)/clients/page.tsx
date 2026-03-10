@@ -1,27 +1,14 @@
 'use client'
 
-export const dynamic = 'force-dynamic'
-
-import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { useState } from 'react'
 import styles from '../tasks/page.module.css'
 import SlidePanel from '@/components/SlidePanel/SlidePanel'
 import { useToast } from '@/components/Toast/Toast'
-
-interface Client {
-    id: string
-    name: string
-    contact_name: string
-    email: string
-    phone: string
-    memo: string
-    created_at: string
-}
+import { useData, type Client } from '@/contexts/DataProvider'
 
 export default function ClientsPage() {
-    const supabase = createClient()
+    const { clients, isLoading, addClient, updateClient, deleteClient } = useData()
     const { showToast } = useToast()
-    const [clients, setClients] = useState<Client[]>([])
     const [selected, setSelected] = useState<Client | null>(null)
     const [panelOpen, setPanelOpen] = useState(false)
 
@@ -32,15 +19,6 @@ export default function ClientsPage() {
     const [formPhone, setFormPhone] = useState('')
     const [formMemo, setFormMemo] = useState('')
     const [saving, setSaving] = useState(false)
-
-    const fetchClients = async () => {
-        const { data } = await supabase.from('clients').select('*').order('created_at', { ascending: false })
-        if (data) setClients(data)
-    }
-
-    useEffect(() => {
-        fetchClients()
-    }, [])
 
     const openPanel = (c: Client | null) => {
         setSelected(c)
@@ -62,15 +40,12 @@ export default function ClientsPage() {
             memo: formMemo,
         }
         if (selected) {
-            const { error } = await supabase.from('clients').update(payload).eq('id', selected.id)
-            if (error) { showToast('更新エラー: ' + error.message, 'error'); setSaving(false); return }
+            await updateClient(selected.id, payload)
             showToast(`「${formName}」を更新しました`, 'success')
         } else {
-            const { error } = await supabase.from('clients').insert(payload)
-            if (error) { showToast('登録エラー: ' + error.message, 'error'); setSaving(false); return }
+            await addClient(payload)
             showToast(`「${formName}」を登録しました`, 'success')
         }
-        await fetchClients()
         setSaving(false)
         setPanelOpen(false)
     }
@@ -78,8 +53,8 @@ export default function ClientsPage() {
     const handleDelete = async () => {
         if (!selected) return
         if (!confirm(`「${selected.name}」を削除しますか？\nProjectsに紐づいているデータには影響しません。`)) return
-        await supabase.from('clients').delete().eq('id', selected.id)
-        await fetchClients()
+        await deleteClient(selected.id)
+        showToast(`「${selected.name}」を削除しました`, 'error')
         setPanelOpen(false)
     }
 
@@ -93,32 +68,36 @@ export default function ClientsPage() {
             </div>
 
             {/* テーブル */}
-            <div className={styles.tableWrap}>
-                <table className={styles.table}>
-                    <thead>
-                        <tr>
-                            <th>Client Name</th>
-                            <th>Contact</th>
-                            <th>Email</th>
-                            <th>Phone</th>
-                            <th>Memo</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {clients.length === 0 ? (
-                            <tr><td colSpan={5} style={{ textAlign: 'center', color: 'var(--color-text-tertiary)', padding: '48px 24px', fontSize: 14 }}>No clients yet. Add one from "+ New Client".</td></tr>
-                        ) : clients.map(c => (
-                            <tr key={c.id} onClick={() => openPanel(c)} style={{ cursor: 'pointer' }}>
-                                <td style={{ fontWeight: 600, color: 'var(--color-text-primary)' }}>{c.name}</td>
-                                <td>{c.contact_name || '—'}</td>
-                                <td>{c.email || '—'}</td>
-                                <td>{c.phone || '—'}</td>
-                                <td style={{ color: 'var(--color-text-tertiary)', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.memo || '—'}</td>
+            {isLoading ? (
+                <p className="text-secondary" style={{ padding: 24 }}>読み込み中...</p>
+            ) : (
+                <div className={styles.tableWrap}>
+                    <table className={styles.table}>
+                        <thead>
+                            <tr>
+                                <th>Client Name</th>
+                                <th>Contact</th>
+                                <th>Email</th>
+                                <th>Phone</th>
+                                <th>Memo</th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
+                        </thead>
+                        <tbody>
+                            {clients.length === 0 ? (
+                                <tr><td colSpan={5} style={{ textAlign: 'center', color: 'var(--color-text-tertiary)', padding: '48px 24px', fontSize: 14 }}>No clients yet. Add one from "+ New Client".</td></tr>
+                            ) : clients.map(c => (
+                                <tr key={c.id} onClick={() => openPanel(c)} style={{ cursor: 'pointer' }}>
+                                    <td style={{ fontWeight: 600, color: 'var(--color-text-primary)' }}>{c.name}</td>
+                                    <td>{c.contact_name || '—'}</td>
+                                    <td>{c.email || '—'}</td>
+                                    <td>{c.phone || '—'}</td>
+                                    <td style={{ color: 'var(--color-text-tertiary)', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.memo || '—'}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            )}
 
             {/* スライドパネル */}
             <SlidePanel isOpen={panelOpen} onClose={() => setPanelOpen(false)} title={selected ? 'Edit Client' : 'New Client'}>
@@ -151,8 +130,6 @@ export default function ClientsPage() {
                     </div>
 
                     <div style={{ display: 'flex', gap: 8, paddingTop: 8, flexDirection: 'column' }}>
-
-
                         <div style={{ display: 'flex', gap: 8 }}>
                             <button className="btn btn-primary" onClick={handleSave} disabled={!formName || saving}>
                                 {saving ? '保存中...' : selected ? 'Save changes' : 'Create'}

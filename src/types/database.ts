@@ -19,6 +19,9 @@ export interface Project {
     phase: '提案' | '見積' | '開発' | '納品' | '請求' | '保守'
     budget: number
     deadline: string | null
+    is_active: boolean
+    maintenance_cost: number
+    invoiced: boolean
     created_at: string
     updated_at: string
 }

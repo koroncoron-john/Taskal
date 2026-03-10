@@ -1,12 +1,10 @@
 'use client'
 
-export const dynamic = 'force-dynamic'
-
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import styles from './page.module.css'
 import SlidePanel from '../../../components/SlidePanel/SlidePanel'
 import DateInput from '../../../components/DateInput/DateInput'
-import { createClient } from '../../../lib/supabase/client'
+import { useData } from '../../../contexts/DataProvider'
 import type { Task } from '../../../types/database'
 
 // プロジェクト由来の仮想タスク型
@@ -21,11 +19,26 @@ interface VirtualItem {
 }
 
 export default function TasksPage() {
-    const supabase = createClient()
-    const [tasks, setTasks] = useState<Task[]>([])
-    const [virtualItems, setVirtualItems] = useState<VirtualItem[]>([])
-    const [loading, setLoading] = useState(true)
-    const [projectNames, setProjectNames] = useState<string[]>([])
+    const { tasks, projects, isLoading, addTask, updateTask, deleteTask } = useData()
+
+    // プロジェクト・追加要件の仮想タスク（projects から派生）
+    const activePhases = ['提案', '見積', '開発']
+    const virtualItems: VirtualItem[] = [
+        ...projects
+            .filter((p: any) => activePhases.includes(p.phase))
+            .map((p: any): VirtualItem => ({
+                id: `proj-${p.id}`,
+                title: `${p.name}${p.client ? ` - ${p.client}` : ''}`,
+                priority: 'urgent_important',
+                due: p.deadline || null,
+                project: p.name,
+                status: p.phase,
+                type: 'project',
+            })),
+    ]
+
+    const projectNames = projects.map((p: any) => p.name)
+
     const [viewMode, setViewMode] = useState<'list' | 'matrix'>('list')
     const [isPanelOpen, setIsPanelOpen] = useState(false)
     const [panelMode, setPanelMode] = useState<'create' | 'edit'>('create')
@@ -39,73 +52,21 @@ export default function TasksPage() {
     const [filterStatus, setFilterStatus] = useState<string>('all')
     const [sortOrder, setSortOrder] = useState<string>('default')
 
-    const fetchTasks = useCallback(async () => {
-        setLoading(true)
-        let query = supabase.from('tasks').select('*')
-        if (filterStatus !== 'all') query = query.eq('status', filterStatus)
-        if (sortOrder === 'due_asc') query = query.order('due', { ascending: true, nullsFirst: false })
-        else if (sortOrder === 'due_desc') query = query.order('due', { ascending: false, nullsFirst: false })
-        else query = query.order('created_at', { ascending: false })
-        const { data } = await query
-        setTasks(data || [])
-        setLoading(false)
-    }, [filterStatus, sortOrder])
-
-    // プロジェクト・追加要件の仮想タスクをfetch
-    const fetchVirtualItems = useCallback(async () => {
-        const activePhases = ['提案', '見積', '開発']
-        const { data: projects } = await supabase
-            .from('projects')
-            .select('id, name, client, phase, deadline')
-            .in('phase', activePhases)
-
-        const projectItems: VirtualItem[] = (projects || []).map((p: any) => ({
-            id: `proj-${p.id}`,
-            title: `${p.name}${p.client ? ` - ${p.client}` : ''}`,
-            priority: 'urgent_important' as const,
-            due: p.deadline || null,
-            project: p.name,
-            status: p.phase,
-            type: 'project' as const,
-        }))
-
-        const { data: reqs } = await supabase
-            .from('project_requirements')
-            .select('id, title, budget, deadline, project_id, invoiced, projects(name)')
-            .eq('invoiced', false)
-
-        const reqItems: VirtualItem[] = (reqs || []).map((r: any) => ({
-            id: `req-${r.id}`,
-            title: r.title,
-            priority: 'urgent_important' as const,
-            due: r.deadline || null,
-            project: r.projects?.name || '',
-            status: '未完了',
-            type: 'requirement' as const,
-        }))
-
-        setVirtualItems([...projectItems, ...reqItems])
-    }, [])
-
-    useEffect(() => { fetchTasks() }, [fetchTasks])
-    useEffect(() => { fetchVirtualItems() }, [fetchVirtualItems])
-
-    // プロジェクト一覧をfetch
-    useEffect(() => {
-        const fetchProjects = async () => {
-            const { data } = await supabase.from('projects').select('name, client')
-            setProjectNames((data || []).map((p: any) => p.name))
-        }
-        fetchProjects()
-    }, [])
+    // フィルタ & ソートはローカルで計算（fetchなし）
+    const filteredTasks = tasks
+        .filter(t => filterStatus === 'all' || t.status === filterStatus)
+        .sort((a, b) => {
+            if (sortOrder === 'due_asc') return (a.due || 'zzz').localeCompare(b.due || 'zzz')
+            if (sortOrder === 'due_desc') return (b.due || '').localeCompare(a.due || '')
+            return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        })
 
     const handleCheck = async (taskId: string) => {
         const task = tasks.find(t => t.id === taskId)
         if (!task) return
         const newStatus = task.status === '完了' ? '未着手' : '完了'
-        // optimistic update: ローカルを先に更新してチカチカを防ぐ
-        setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus } : t))
-        await supabase.from('tasks').update({ status: newStatus }).eq('id', taskId)
+        // 楽観的UI: updateTask が先にローカルStateを更新してくれる
+        await updateTask(taskId, { status: newStatus })
     }
 
     const openCreatePanel = () => {
@@ -116,26 +77,27 @@ export default function TasksPage() {
     }
     const handleSave = async () => {
         const payload = { title: formTitle, priority: formPriority, due: formDue || null, project: formProject, status: formStatus }
-        if (panelMode === 'create') await supabase.from('tasks').insert(payload)
-        else if (editingTask) await supabase.from('tasks').update({ title: formTitle, priority: formPriority, due: formDue || null, project: formProject, status: formStatus }).eq('id', editingTask.id)
-        setIsPanelOpen(false); fetchTasks()
+        if (panelMode === 'create') {
+            await addTask(payload as Omit<Task, 'id' | 'created_at' | 'updated_at'>)
+        } else if (editingTask) {
+            await updateTask(editingTask.id, payload)
+        }
+        setIsPanelOpen(false)
     }
     const handleDelete = async () => {
         if (!editingTask) return
-        await supabase.from('tasks').delete().eq('id', editingTask.id)
-        setIsPanelOpen(false); fetchTasks()
+        await deleteTask(editingTask.id)
+        setIsPanelOpen(false)
     }
 
     const priorityDot = (p: string) => { if (p === 'urgent_important' || p === 'urgent') return 'dot-urgent'; if (p === 'important') return 'dot-important'; return 'dot-other' }
     const priorityLabel = (p: string) => { if (p === 'urgent_important') return '緊急×重要'; if (p === 'important') return '重要'; if (p === 'urgent') return '緊急'; return 'その他' }
 
-    // MatrixのQ分類 (通常タスク)
+    // MatrixのQ分類（フィルタ前のtasks全体から）
     const q1 = tasks.filter(t => t.priority === 'urgent_important')
     const q2 = tasks.filter(t => t.priority === 'important')
     const q3 = tasks.filter(t => t.priority === 'urgent')
     const q4 = tasks.filter(t => t.priority === 'other')
-
-    // Q1にvirtualItemsも追加
     const q1All = [...q1, ...virtualItems as any[]]
 
     const typeBadge = (type: string) => {
@@ -163,7 +125,7 @@ export default function TasksPage() {
                 </div>
             </div>
 
-            {loading ? <p className="text-secondary" style={{ padding: 24 }}>読み込み中...</p> : viewMode === 'list' ? (
+            {isLoading ? <p className="text-secondary" style={{ padding: 24 }}>読み込み中...</p> : viewMode === 'list' ? (
                 <>
                     {/* ── 手動タスク ── */}
                     <div className={styles.tableWrap}><table className={styles.table}>
@@ -172,7 +134,7 @@ export default function TasksPage() {
                             <th>Task Name</th><th>Priority</th><th>Project</th><th>Due Date</th><th>Status</th>
                         </tr></thead>
                         <tbody>
-                            {tasks.map(t => (
+                            {filteredTasks.map(t => (
                                 <tr key={t.id} style={t.status === '完了' ? { opacity: 0.5, textDecoration: 'line-through' } : {}}>
                                     <td className={styles.tdCheck}><input type="checkbox" className="checkbox" checked={t.status === '完了'} onChange={() => handleCheck(t.id)} title="完了にする" style={{ accentColor: 'var(--color-brand)' }} /></td>
                                     <td className={styles.tdName}><span className="text-link" onClick={() => openEditPanel(t)}>{t.title}</span></td>
@@ -182,15 +144,15 @@ export default function TasksPage() {
                                     <td>{t.status}</td>
                                 </tr>
                             ))}
-                            {tasks.length === 0 && filterStatus === 'all' && (
+                            {filteredTasks.length === 0 && filterStatus === 'all' && (
                                 <tr><td colSpan={6} style={{ textAlign: 'center', padding: '32px 24px', color: 'var(--color-text-tertiary)', fontSize: 14 }}>No tasks yet. Add one from "+ New Task".</td></tr>
                             )}
-                            {tasks.length === 0 && filterStatus !== 'all' && (
+                            {filteredTasks.length === 0 && filterStatus !== 'all' && (
                                 <tr><td colSpan={6} style={{ textAlign: 'center', padding: '32px 24px', color: 'var(--color-text-tertiary)', fontSize: 14 }}>No data matching your filter criteria.</td></tr>
                             )}
                         </tbody>
                     </table></div>
-                    <div className={styles.pagination}>{tasks.length} tasks</div>
+                    <div className={styles.pagination}>{filteredTasks.length} tasks</div>
 
                     {/* ── Project Tasks ── */}
                     <div style={{ marginTop: 32 }}>

@@ -1,106 +1,45 @@
 'use client'
 
-export const dynamic = 'force-dynamic'
-
-import { useState, useEffect } from 'react'
 import styles from './page.module.css'
-import { createClient } from '../../../lib/supabase/client'
-import type { Task, Project } from '../../../types/database'
+import { useData } from '../../../contexts/DataProvider'
 
 const phaseProgress: Record<string, number> = {
     '提案': 10, '見積': 25, '開発': 50, '納品': 75, '請求': 90, '保守': 100,
 }
 
-interface VirtualTask {
-    id: string
-    title: string
-    priority: 'urgent_important'
-    due: string | null
-    project: string
-    type: 'project' | 'requirement'
-}
+const today = new Date().toISOString().slice(0, 10)
+
+const priorityOrder: Record<string, number> = { urgent_important: 0, important: 1, urgent: 2, other: 3 }
+
+const GREETINGS = ['おはようございます', 'お疲れ様です', 'こんにちは', '今日も頑張りましょう', 'お手伝いします']
+const greeting = GREETINGS[Math.floor(Math.random() * GREETINGS.length)]
 
 export default function DashboardPage() {
-    const supabase = createClient()
-    const [tasks, setTasks] = useState<Task[]>([])
-    const [projects, setProjects] = useState<Project[]>([])
-    const [virtualTasks, setVirtualTasks] = useState<VirtualTask[]>([])
-    const [loading, setLoading] = useState(true)
-    const [displayName, setDisplayName] = useState('')
-    const [doneTaskIds, setDoneTaskIds] = useState<Set<string>>(new Set())
-    const [greeting] = useState(() => {
-        const greetings = ['おはようございます', 'お疲れ様です', 'こんにちは', '今日も頑張りましょう', 'お手伝いします']
-        return greetings[Math.floor(Math.random() * greetings.length)]
-    })
+    const { tasks, projects, isLoading, updateTask } = useData()
 
-    const fetchAll = async () => {
-        setLoading(true)
-        const [tasksRes, projectsRes, userRes] = await Promise.all([
-            supabase.from('tasks').select('*').neq('status', '完了').order('due', { ascending: true, nullsFirst: false }),
-            supabase.from('projects').select('*').order('created_at', { ascending: false }),
-            supabase.auth.getUser(),
-        ])
-        setTasks(tasksRes.data || [])
-        setProjects(projectsRes.data || [])
-        const name = userRes.data.user?.user_metadata?.full_name || userRes.data.user?.email?.split('@')[0] || ''
-        setDisplayName(name)
+    // 今日以前の期限を持つタスク（完了以外）
+    const todayTasks = tasks
+        .filter(t => t.status !== '完了' && (!t.due || t.due <= today))
+        .sort((a, b) => (priorityOrder[a.priority] ?? 3) - (priorityOrder[b.priority] ?? 3))
 
-        // プロジェクト・追加要件の仮想タスク
-        const activePhases = ['提案', '見積', '開発']
-        const { data: activeProjects } = await supabase
-            .from('projects')
-            .select('id, name, client, deadline')
-            .in('phase', activePhases)
-
-        const { data: reqs } = await supabase
-            .from('project_requirements')
-            .select('id, title, deadline, invoiced, projects(name)')
-            .eq('invoiced', false)
-
-        const projVirtual: VirtualTask[] = (activeProjects || [])
-            .filter((p: any) => p.deadline && p.deadline <= today)
-            .map((p: any) => ({
-                id: `proj-${p.id}`,
-                title: `${p.name}${p.client ? ` - ${p.client}` : ''}`,
-                priority: 'urgent_important' as const,
-                due: p.deadline || null,
-                project: p.name,
-                type: 'project' as const,
-            }))
-
-        const reqVirtual: VirtualTask[] = (reqs || [])
-            .filter((r: any) => r.deadline && r.deadline <= today)
-            .map((r: any) => ({
-                id: `req-${r.id}`,
-                title: r.title,
-                priority: 'urgent_important' as const,
-                due: r.deadline || null,
-                project: r.projects?.name || '',
-                type: 'requirement' as const,
-            }))
-
-        setVirtualTasks([...projVirtual, ...reqVirtual])
-        setLoading(false)
-    }
-
-    useEffect(() => { fetchAll() }, [])
+    // アクティブフェーズのプロジェクトタスク
+    const activePhases = ['提案', '見積', '開発']
+    const virtualTasks = projects
+        .filter((p: any) => activePhases.includes(p.phase) && p.deadline && p.deadline <= today)
+        .map((p: any) => ({
+            id: `proj-${p.id}`,
+            title: `${p.name}${p.client ? ` - ${p.client}` : ''}`,
+            due: p.deadline || null,
+            project: p.name,
+            type: 'project' as const,
+        }))
 
     const handleCheckTask = async (taskId: string) => {
-        const isDone = doneTaskIds.has(taskId)
-        setDoneTaskIds(prev => {
-            const next = new Set(prev)
-            if (isDone) next.delete(taskId)
-            else next.add(taskId)
-            return next
-        })
-        await supabase.from('tasks').update({ status: isDone ? '未着手' : '完了' }).eq('id', taskId)
+        const task = tasks.find(t => t.id === taskId)
+        if (!task) return
+        const newStatus = task.status === '完了' ? '未着手' : '完了'
+        await updateTask(taskId, { status: newStatus })
     }
-
-    const priorityOrder: Record<string, number> = { urgent_important: 0, important: 1, urgent: 2, other: 3 }
-    const today = new Date().toISOString().slice(0, 10)
-    const todayTasks = tasks
-        .filter(t => !t.due || t.due <= today)
-        .sort((a, b) => (priorityOrder[a.priority] ?? 3) - (priorityOrder[b.priority] ?? 3))
 
     const priorityDotClass = (p: string) => {
         if (p === 'urgent_important' || p === 'urgent') return 'dot-urgent'
@@ -113,12 +52,12 @@ export default function DashboardPage() {
         return <span style={{ fontSize: 10, background: '#8B5CF6', color: '#fff', borderRadius: 4, padding: '1px 5px', marginRight: 4, fontWeight: 600, flexShrink: 0 }}>REQ</span>
     }
 
-    if (loading) return <p className="text-secondary" style={{ padding: 24 }}>読み込み中...</p>
+    if (isLoading) return <p className="text-secondary" style={{ padding: 24 }}>読み込み中...</p>
 
     return (
         <div className={styles.dashboard}>
             <div className={styles.greeting}>
-                <p className={styles.greetingText}>{greeting}、{displayName}さん</p>
+                <p className={styles.greetingText}>{greeting}</p>
                 <h1 className={styles.date}>
                     {new Date().toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' })}
                 </h1>
@@ -127,7 +66,7 @@ export default function DashboardPage() {
             <section className={styles.card}>
                 <h2 className={styles.sectionTitle}>今日のタスク</h2>
                 <div className={styles.taskList}>
-                    {/* プロジェクト・追加要件の仮想タスク（常時表示） */}
+                    {/* プロジェクト・追加要件の仮想タスク */}
                     {virtualTasks.map(v => (
                         <div key={v.id} className={styles.taskRow}>
                             <span style={{ display: 'inline-block', width: 16, height: 16, flexShrink: 0 }} />
@@ -147,8 +86,8 @@ export default function DashboardPage() {
                             There are no tasks for today 🎉
                         </p>
                     ) : todayTasks.map((task) => (
-                        <div key={task.id} className={styles.taskRow} style={doneTaskIds.has(task.id) ? { opacity: 0.45, textDecoration: 'line-through' } : {}}>
-                            <input type="checkbox" className="checkbox" checked={doneTaskIds.has(task.id)} onChange={() => handleCheckTask(task.id)} />
+                        <div key={task.id} className={styles.taskRow} style={task.status === '完了' ? { opacity: 0.45, textDecoration: 'line-through' } : {}}>
+                            <input type="checkbox" className="checkbox" checked={task.status === '完了'} onChange={() => handleCheckTask(task.id)} />
                             <span className={`dot ${priorityDotClass(task.priority)}`} />
                             <span className={styles.taskName}>{task.title}</span>
                             <span className={styles.taskMeta}>
@@ -174,6 +113,9 @@ export default function DashboardPage() {
                             </div>
                         </div>
                     ))}
+                    {projects.length === 0 && (
+                        <p className="text-secondary" style={{ margin: 0, fontSize: 14 }}>No projects yet.</p>
+                    )}
                 </div>
             </section>
         </div>
