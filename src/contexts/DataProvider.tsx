@@ -168,62 +168,73 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         }
     }, [fetchAll])
 
-    // --- タスク操作 ---
-    const addTask = async (payload: Omit<Task, 'id' | 'created_at' | 'updated_at'>) => {
-        // Realtimeがキャッシュを自動更新するためfetchは不要
-        await supabase.from('tasks').insert(payload)
-    }
-
-    const updateTask = async (id: string, payload: Partial<Task>) => {
-        // 楽観的UI: Realtime到着前にローカルを先更新
-        setTasks(prev => prev.map(t => t.id === id ? { ...t, ...payload } : t))
-        await supabase.from('tasks').update(payload).eq('id', id)
-    }
-
-    const deleteTask = async (id: string) => {
-        setTasks(prev => prev.filter(t => t.id !== id))
-        await supabase.from('tasks').delete().eq('id', id)
-    }
-
+    // --- refresh helpers ---
     const refreshTasks = async () => {
         const { data } = await supabase.from('tasks').select('*').order('created_at', { ascending: false })
         setTasks(data || [])
+    }
+    const refreshProjects = async () => {
+        const { data } = await supabase.from('projects').select('*').order('created_at', { ascending: false })
+        setProjects(data || [])
+    }
+    const refreshClients = async () => {
+        const { data } = await supabase.from('clients').select('*').order('created_at', { ascending: false })
+        setClients(data || [])
+    }
+
+    // --- タスク操作 ---
+    const addTask = async (payload: Omit<Task, 'id' | 'created_at' | 'updated_at'>) => {
+        await supabase.from('tasks').insert(payload)
+        await refreshTasks()  // Realtimeに依存せず確実に最新化
+    }
+
+    const updateTask = async (id: string, payload: Partial<Task>) => {
+        setTasks(prev => prev.map(t => t.id === id ? { ...t, ...payload } : t))  // 楽観的UI
+        await supabase.from('tasks').update(payload).eq('id', id)
+        await refreshTasks()
+    }
+
+    const deleteTask = async (id: string) => {
+        setTasks(prev => prev.filter(t => t.id !== id))  // 楽観的UI
+        await supabase.from('tasks').delete().eq('id', id)
+        await refreshTasks()
     }
 
     // --- プロジェクト操作 ---
     const addProject = async (payload: Partial<Project>): Promise<Project | null> => {
         const { data } = await supabase.from('projects').insert(payload).select().single()
+        await refreshProjects()
         return data
     }
 
     const updateProject = async (id: string, payload: Partial<Project>) => {
-        setProjects(prev => prev.map(p => p.id === id ? { ...p, ...payload } : p))
+        setProjects(prev => prev.map(p => p.id === id ? { ...p, ...payload } : p))  // 楽観的UI
         await supabase.from('projects').update(payload).eq('id', id)
+        await refreshProjects()
     }
 
     const deleteProject = async (id: string) => {
-        setProjects(prev => prev.filter(p => p.id !== id))
+        setProjects(prev => prev.filter(p => p.id !== id))  // 楽観的UI
         await supabase.from('projects').delete().eq('id', id)
-    }
-
-    const refreshProjects = async () => {
-        const { data } = await supabase.from('projects').select('*').order('created_at', { ascending: false })
-        setProjects(data || [])
+        await refreshProjects()
     }
 
     // --- クライアント操作 ---
     const addClient = async (payload: Partial<Client>) => {
         await supabase.from('clients').insert(payload)
+        await refreshClients()  // Realtimeに依存せず確実に最新化
     }
 
     const updateClient = async (id: string, payload: Partial<Client>) => {
-        setClients(prev => prev.map(c => c.id === id ? { ...c, ...payload } : c))
+        setClients(prev => prev.map(c => c.id === id ? { ...c, ...payload } : c))  // 楽観的UI
         await supabase.from('clients').update(payload).eq('id', id)
+        await refreshClients()
     }
 
     const deleteClient = async (id: string) => {
-        setClients(prev => prev.filter(c => c.id !== id))
+        setClients(prev => prev.filter(c => c.id !== id))  // 楽観的UI
         await supabase.from('clients').delete().eq('id', id)
+        await refreshClients()
     }
 
     return (
