@@ -268,3 +268,23 @@ select:focus {
     border-radius: 2px;
     transition: width 0.3s ease;
 }
+
+/* ============================================
+   モバイル向けフォントサイズ調整
+   最小文字サイズ: 14px（可読性確保）
+   ============================================ */
+@media (max-width: 768px) {
+    :root {
+        /* 12px → 14px に引き上げ（モバイル最小保証） */
+        --font-size-section-label: 14px;
+        --font-size-table-header: 14px;
+        --font-size-caption: 14px;
+    }
+
+    /* iOS Safari のフォームズームを防止（16px未満でズームが発動するため） */
+    input,
+    select,
+    textarea {
+        font-size: 16px;
+    }
+}

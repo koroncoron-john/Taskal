@@ -65,6 +65,7 @@ export default function LoginPage() {
                 provider: 'google',
                 options: {
                     redirectTo: `${location.origin}/dashboard`,
+                    scopes: 'https://www.googleapis.com/auth/tasks',
                 }
             })
             if (error) {

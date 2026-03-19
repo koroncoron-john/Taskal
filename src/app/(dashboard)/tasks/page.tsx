@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useCallback } from 'react'
+import { createClient } from '../../../lib/supabase/client'
 import styles from './page.module.css'
 import SlidePanel from '../../../components/SlidePanel/SlidePanel'
 import DateInput from '../../../components/DateInput/DateInput'
@@ -39,6 +40,8 @@ export default function TasksPage() {
 
     const projectNames = projects.map((p: any) => p.name)
 
+    const supabase = createClient()
+
     const [viewMode, setViewMode] = useState<'list' | 'matrix'>('list')
     const [isPanelOpen, setIsPanelOpen] = useState(false)
     const [panelMode, setPanelMode] = useState<'create' | 'edit'>('create')
@@ -51,6 +54,11 @@ export default function TasksPage() {
     const [formStatus, setFormStatus] = useState<Task['status']>('未着手')
     const [filterStatus, setFilterStatus] = useState<string>('all')
     const [sortOrder, setSortOrder] = useState<string>('default')
+
+    // Google Sync 用 state
+    const [syncLoading, setSyncLoading] = useState(false)
+    const [syncResult, setSyncResult] = useState<'success' | 'error' | 'needs-google-login' | null>(null)
+    const [syncMessage, setSyncMessage] = useState('')
 
     // フィルタ & ソートはローカルで計算（fetchなし）
     const filteredTasks = tasks
@@ -88,6 +96,69 @@ export default function TasksPage() {
         if (!editingTask) return
         await deleteTask(editingTask.id)
         setIsPanelOpen(false)
+    }
+
+    const handleGoogleSync = async () => {
+        if (!formTitle) return
+        setSyncLoading(true)
+        setSyncResult(null)
+        setSyncMessage('')
+
+        // Supabaseセッションからprovider_tokenを取得
+        const { data: { session } } = await supabase.auth.getSession()
+        const providerToken = session?.provider_token
+
+        // Googleログインでない場合（provider_token が存在しない）
+        if (!session?.user) {
+            setSyncResult('needs-google-login')
+            setSyncMessage('ログインが必要です。')
+            setSyncLoading(false)
+            return
+        }
+
+        if (!providerToken) {
+            // emailログインまたはprovider_tokenが期限切れ
+            const provider = session.user.app_metadata?.provider
+            if (provider !== 'google') {
+                setSyncResult('needs-google-login')
+                setSyncMessage('Google Tasksと連携するには、Googleアカウントでログインしてください。')
+            } else {
+                setSyncResult('needs-google-login')
+                setSyncMessage('Googleセッションが切れました。一度ログアウトして、Googleで再ログインしてください。')
+            }
+            setSyncLoading(false)
+            return
+        }
+
+        // API Route 経由でGoogle Tasks APIを呼び出す
+        try {
+            const res = await fetch('/api/google-tasks/add', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    providerToken,
+                    title: formTitle,
+                    due: formDue || null,
+                }),
+            })
+            const data = await res.json()
+
+            if (res.ok && data.success) {
+                setSyncResult('success')
+                setSyncMessage('✅ Google Tasksに追加しました！')
+            } else if (data.needsRelogin) {
+                setSyncResult('needs-google-login')
+                setSyncMessage('Googleセッションが切れました。再ログインしてください。')
+            } else {
+                setSyncResult('error')
+                setSyncMessage('エラー: ' + (data.error || '不明なエラー'))
+            }
+        } catch {
+            setSyncResult('error')
+            setSyncMessage('通信エラーが発生しました。')
+        }
+
+        setSyncLoading(false)
     }
 
     const priorityDot = (p: string) => { if (p === 'urgent_important' || p === 'urgent') return 'dot-urgent'; if (p === 'important') return 'dot-important'; return 'dot-other' }
@@ -214,11 +285,73 @@ export default function TasksPage() {
                 </div>
             )}
 
-            <SlidePanel isOpen={isPanelOpen} onClose={() => setIsPanelOpen(false)} title={panelMode === 'create' ? 'New Task' : 'Edit Task'}>
+            <SlidePanel isOpen={isPanelOpen} onClose={() => { setIsPanelOpen(false); setSyncResult(null); setSyncMessage('') }} title={panelMode === 'create' ? 'New Task' : 'Edit Task'}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                     <div><label className="text-section-label">Task Name</label><input type="text" className="select" value={formTitle} onChange={e => setFormTitle(e.target.value)} style={{ backgroundImage: 'none', cursor: 'text' }} /></div>
                     <div><label className="text-section-label">Priority</label><select className="select" value={formPriority} onChange={e => setFormPriority(e.target.value as Task['priority'])}><option value="urgent_important">緊急×重要 (Q1)</option><option value="important">重要 (Q2)</option><option value="urgent">緊急 (Q3)</option><option value="other">その他 (Q4)</option></select></div>
                     <div><label className="text-section-label">Due Date</label><DateInput value={formDue} onChange={setFormDue} /></div>
+
+                    {/* Google Sync ボタン（Editモードのみ表示） */}
+                    {panelMode === 'edit' && (
+                        <div>
+                            <button
+                                onClick={handleGoogleSync}
+                                disabled={syncLoading || !formTitle}
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 8,
+                                    padding: '8px 14px',
+                                    border: '1px solid var(--color-border)',
+                                    borderRadius: 'var(--border-radius)',
+                                    background: '#fff',
+                                    color: syncLoading ? 'var(--color-text-tertiary)' : 'var(--color-text-primary)',
+                                    fontSize: 14,
+                                    fontFamily: 'var(--font-family)',
+                                    fontWeight: 500,
+                                    cursor: (syncLoading || !formTitle) ? 'not-allowed' : 'pointer',
+                                    opacity: (syncLoading || !formTitle) ? 0.6 : 1,
+                                    transition: 'all 0.15s',
+                                    width: '100%',
+                                    justifyContent: 'center',
+                                }}
+                            >
+                                {/* Google G アイコン */}
+                                <svg width="16" height="16" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+                                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+                                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05" />
+                                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
+                                </svg>
+                                {syncLoading ? '同期中...' : 'Google Tasksに追加'}
+                            </button>
+
+                            {/* 同期メッセージ表示 */}
+                            {syncResult && (
+                                <div style={{
+                                    marginTop: 8,
+                                    padding: '8px 12px',
+                                    borderRadius: 8,
+                                    fontSize: 13,
+                                    background: syncResult === 'success' ? 'rgba(62,207,142,0.12)'
+                                              : syncResult === 'needs-google-login' ? 'rgba(66,133,244,0.10)'
+                                              : 'rgba(239,68,68,0.08)',
+                                    color: syncResult === 'success' ? '#16a34a'
+                                         : syncResult === 'needs-google-login' ? '#1d4ed8'
+                                         : 'var(--color-danger)',
+                                    lineHeight: 1.5,
+                                }}>
+                                    {syncMessage}
+                                    {syncResult === 'needs-google-login' && (
+                                        <div style={{ marginTop: 6 }}>
+                                            <a href="/login" style={{ color: '#1d4ed8', fontWeight: 600, textDecoration: 'underline' }}>Googleでログインする →</a>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    )}
+
                     <div><label className="text-section-label">Project</label><select className="select" value={formProject} onChange={e => setFormProject(e.target.value)}><option value="">（なし）</option>{projectNames.map(n => <option key={n} value={n}>{n}</option>)}</select></div>
                     <div><label className="text-section-label">Status</label><select className="select" value={formStatus} onChange={e => setFormStatus(e.target.value as Task['status'])}><option value="未着手">未着手</option><option value="進行中">進行中</option><option value="下書き">下書き</option><option value="アイデア">アイデア</option><option value="完了">完了</option></select></div>
                     <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
