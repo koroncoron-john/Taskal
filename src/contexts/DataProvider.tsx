@@ -174,6 +174,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
             .subscribe()
 
         return () => {
+            subscription.unsubscribe()
             supabase.removeChannel(channel)
         }
     }, [fetchAll])
