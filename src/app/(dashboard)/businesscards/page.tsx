@@ -30,6 +30,7 @@ export default function BusinessCardsPage() {
     const [formMemo, setFormMemo] = useState('')
     const csvInputRef = useRef<HTMLInputElement>(null)
     const cameraInputRef = useRef<HTMLInputElement>(null)
+    const fileInputRef = useRef<HTMLInputElement>(null)
 
     // カメラスキャン関連
     const [scanning, setScanning] = useState(false)
@@ -280,6 +281,17 @@ export default function BusinessCardsPage() {
                         )}
                     </button>
                     <input ref={cameraInputRef} type="file" accept="image/*" multiple capture="environment"
+                        onChange={handleCameraCapture} style={{ display: 'none' }} />
+                    {/* ファイルを選択ボタン（PCや既存画像から） */}
+                    <button className="btn btn-outline" onClick={() => fileInputRef.current?.click()} disabled={scanning}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                            <polyline points="14 2 14 8 20 8" />
+                        </svg>
+                        ファイルを選択
+                    </button>
+                    <input ref={fileInputRef} type="file" accept="image/*" multiple
                         onChange={handleCameraCapture} style={{ display: 'none' }} />
                     <button className="btn btn-primary" onClick={openCreate}>＋ New Contact</button>
                 </div>
