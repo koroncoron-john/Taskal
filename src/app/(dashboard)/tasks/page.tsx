@@ -105,8 +105,10 @@ export default function TasksPage() {
         setSyncMessage('')
 
         // Supabaseセッションからprovider_tokenを取得
+        // provider_tokenはページリロード後に消えるため、user_metadataをフォールバックとして使用
         const { data: { session } } = await supabase.auth.getSession()
-        const providerToken = session?.provider_token
+        const { data: { user } } = await supabase.auth.getUser()
+        const providerToken = session?.provider_token || user?.user_metadata?.google_provider_token
 
         // Googleログインでない場合（provider_token が存在しない）
         if (!session?.user) {
