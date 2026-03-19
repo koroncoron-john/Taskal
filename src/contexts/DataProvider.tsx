@@ -84,16 +84,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         fetchAll()
 
-        // Googleログイン時にprovider_tokenをuser_metadataに保存
-        // （provider_tokenはページリロード後に消えるため永続化が必要）
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-            if (event === 'SIGNED_IN' && session?.provider_token) {
-                await supabase.auth.updateUser({
-                    data: { google_provider_token: session.provider_token }
-                })
-            }
-        })
-
         const channel = supabase
             .channel('taskal-db-changes')
             // --- tasks ---
@@ -174,7 +164,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
             .subscribe()
 
         return () => {
-            subscription.unsubscribe()
             supabase.removeChannel(channel)
         }
     }, [fetchAll])
