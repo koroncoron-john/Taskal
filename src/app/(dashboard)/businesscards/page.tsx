@@ -29,6 +29,14 @@ export default function BusinessCardsPage() {
     const [formMeetStatus, setFormMeetStatus] = useState('Not Met')
     const [formMemo, setFormMemo] = useState('')
     const csvInputRef = useRef<HTMLInputElement>(null)
+    const cameraInputRef = useRef<HTMLInputElement>(null)
+
+    // カメラスキャン関連
+    const [scanning, setScanning] = useState(false)
+    const [scanResults, setScanResults] = useState<Array<{
+        name: string; company: string; role: string; email: string; phone: string
+    }>>([])  
+    const [showScanModal, setShowScanModal] = useState(false)
 
     // Filter & Sort
     const [filterStatus, setFilterStatus] = useState<'All' | 'Met' | 'Not Met'>('All')
@@ -148,6 +156,59 @@ export default function BusinessCardsPage() {
         return result
     }
 
+    // 名刺カメラスキャン
+    const handleCameraCapture = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = Array.from(e.target.files || [])
+        if (files.length === 0) return
+        if (files.length > 10) { showToast('一度に処理できる名刺は10枚までです', 'error'); return }
+
+        setScanning(true)
+        try {
+            // 画像をbase64に変換
+            const images = await Promise.all(files.map(file => new Promise<string>((resolve, reject) => {
+                const reader = new FileReader()
+                reader.onload = () => resolve(reader.result as string)
+                reader.onerror = reject
+                reader.readAsDataURL(file)
+            })))
+
+            const res = await fetch('/api/business-cards/scan', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ images })
+            })
+            const data = await res.json()
+
+            if (!res.ok) { showToast(data.error || 'スキャンに失敗しました', 'error'); return }
+
+            setScanResults(data.results)
+            setShowScanModal(true)
+        } catch (err) {
+            showToast('スキャン中にエラーが発生しました', 'error')
+        } finally {
+            setScanning(false)
+            if (cameraInputRef.current) cameraInputRef.current.value = ''
+        }
+    }
+
+    const handleBulkSave = async () => {
+        const validCards = scanResults.filter(c => c.name.trim())
+        if (validCards.length === 0) { showToast('登録するデータがありません', 'error'); return }
+
+        for (const card of validCards) {
+            await supabase.from('business_cards').insert({
+                name: card.name, company: card.company, role: card.role,
+                email: card.email, phone: card.phone,
+                affinity: '普通', meet_status: 'Not Met', memo: '',
+                registered_date: new Date().toISOString().slice(0, 10)
+            })
+        }
+        showToast(`${validCards.length}枚の名刺を登録しました`, 'success')
+        setShowScanModal(false)
+        setScanResults([])
+        fetchCards()
+    }
+
     const affinityColor = (a: string) => a === '高' ? 'var(--color-brand)' : a === '低' ? 'var(--color-text-tertiary)' : 'var(--color-text-secondary)'
     const affinityOrder = (a: string) => a === '高' ? 3 : a === '普通' ? 2 : 1
 
@@ -203,6 +264,23 @@ export default function BusinessCardsPage() {
                         ↓ Template
                     </button>
                     <input ref={csvInputRef} type="file" accept=".csv" onChange={handleCsvImport} style={{ display: 'none' }} />
+                    {/* カメラで撮影ボタン */}
+                    <button className="btn btn-outline" onClick={() => cameraInputRef.current?.click()} disabled={scanning}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                        {scanning ? (
+                            <>⏳ AI解析中...</>
+                        ) : (
+                            <>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" />
+                                    <circle cx="12" cy="13" r="4" />
+                                </svg>
+                                カメラで撮影
+                            </>
+                        )}
+                    </button>
+                    <input ref={cameraInputRef} type="file" accept="image/*" multiple capture="environment"
+                        onChange={handleCameraCapture} style={{ display: 'none' }} />
                     <button className="btn btn-primary" onClick={openCreate}>＋ New Contact</button>
                 </div>
             </div>
@@ -276,6 +354,70 @@ export default function BusinessCardsPage() {
                     </div>
                 </div>
             </SlidePanel>
+
+            {/* 名刺スキャン確認モーダル */}
+            {showScanModal && (
+                <div style={{
+                    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16
+                }}>
+                    <div style={{
+                        background: 'var(--color-bg)', borderRadius: 12, padding: 24,
+                        width: '100%', maxWidth: 640, maxHeight: '90vh', overflowY: 'auto',
+                        boxShadow: '0 20px 60px rgba(0,0,0,0.3)'
+                    }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                            <h2 style={{ fontSize: 18, fontWeight: 700 }}>🤖 AI読み取り結果の確認</h2>
+                            <button onClick={() => { setShowScanModal(false); setScanResults([]) }}
+                                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 20, color: 'var(--color-text-tertiary)' }}>×</button>
+                        </div>
+                        <p className="text-secondary" style={{ marginBottom: 16, fontSize: 13 }}>
+                            内容を確認・編集してから「一括登録」してください。名前が空の行はスキップされます。
+                        </p>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                            {scanResults.map((card, i) => (
+                                <div key={i} style={{ border: '1px solid var(--color-border)', borderRadius: 8, padding: 16 }}>
+                                    <div style={{ fontWeight: 600, marginBottom: 12, color: 'var(--color-text-secondary)', fontSize: 12 }}>
+                                        名刺 {i + 1}枚目
+                                    </div>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                                        {[
+                                            { label: '名前', key: 'name', type: 'text' },
+                                            { label: '会社名', key: 'company', type: 'text' },
+                                            { label: '役職', key: 'role', type: 'text' },
+                                            { label: 'メール', key: 'email', type: 'email' },
+                                            { label: '電話', key: 'phone', type: 'tel' },
+                                        ].map(({ label, key, type }) => (
+                                            <div key={key} style={key === 'email' || key === 'phone' ? { gridColumn: '1 / -1' } : {}}>
+                                                <label className="text-section-label" style={{ fontSize: 11 }}>{label}</label>
+                                                <input
+                                                    type={type}
+                                                    className="select"
+                                                    value={(card as any)[key]}
+                                                    onChange={e => {
+                                                        const updated = [...scanResults]
+                                                        ;(updated[i] as any)[key] = e.target.value
+                                                        setScanResults(updated)
+                                                    }}
+                                                    style={{ backgroundImage: 'none', cursor: 'text', fontSize: 13, padding: '6px 10px' }}
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                        <div style={{ display: 'flex', gap: 8, marginTop: 20 }}>
+                            <button className="btn btn-primary" onClick={handleBulkSave}>
+                                💾 {scanResults.filter(c => c.name.trim()).length}件 一括登録
+                            </button>
+                            <button className="btn btn-outline" onClick={() => { setShowScanModal(false); setScanResults([]) }}>
+                                キャンセル
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }
