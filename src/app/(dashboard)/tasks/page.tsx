@@ -1,11 +1,12 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { createClient } from '../../../lib/supabase/client'
 import styles from './page.module.css'
 import SlidePanel from '../../../components/SlidePanel/SlidePanel'
 import DateInput from '../../../components/DateInput/DateInput'
 import { useData } from '../../../contexts/DataProvider'
+import { usePreferences } from '../../../hooks/usePreferences'
 import type { Task } from '../../../types/database'
 
 // プロジェクト由来の仮想タスク型
@@ -42,6 +43,9 @@ export default function TasksPage() {
 
     const supabase = createClient()
 
+    // Filter/Sort設定の永続化
+    const { preferences, savePreferences, loaded } = usePreferences()
+
     const [viewMode, setViewMode] = useState<'list' | 'matrix'>('list')
     const [isPanelOpen, setIsPanelOpen] = useState(false)
     const [panelMode, setPanelMode] = useState<'create' | 'edit'>('create')
@@ -54,6 +58,14 @@ export default function TasksPage() {
     const [formStatus, setFormStatus] = useState<Task['status']>('未着手')
     const [filterStatus, setFilterStatus] = useState<string>('all')
     const [sortOrder, setSortOrder] = useState<string>('default')
+
+    // preferencesが読み込まれたら初期値を反映
+    useEffect(() => {
+        if (loaded && preferences.tasks) {
+            setFilterStatus(preferences.tasks.filterStatus)
+            setSortOrder(preferences.tasks.sortOrder)
+        }
+    }, [loaded])
 
     // Google Sync 用 state
     const [syncLoading, setSyncLoading] = useState(false)
@@ -188,10 +200,18 @@ export default function TasksPage() {
                     <button className={`${styles.tab} ${viewMode === 'matrix' ? styles.tabActive : ''}`} onClick={() => setViewMode('matrix')}>Matrix</button>
                 </div>
                 <div className={styles.actions} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                    <select className="select" style={{ width: 'auto', paddingRight: '28px' }} value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+                    <select className="select" style={{ width: 'auto', paddingRight: '28px' }} value={filterStatus} onChange={(e) => {
+                        const v = e.target.value
+                        setFilterStatus(v)
+                        savePreferences('tasks', { filterStatus: v, sortOrder })
+                    }}>
                         <option value="all">Filter: All</option><option value="未着手">未着手</option><option value="進行中">進行中</option><option value="下書き">下書き</option><option value="完了">完了</option>
                     </select>
-                    <select className="select" style={{ width: 'auto', paddingRight: '28px' }} value={sortOrder} onChange={(e) => setSortOrder(e.target.value)}>
+                    <select className="select" style={{ width: 'auto', paddingRight: '28px' }} value={sortOrder} onChange={(e) => {
+                        const v = e.target.value
+                        setSortOrder(v)
+                        savePreferences('tasks', { filterStatus, sortOrder: v })
+                    }}>
                         <option value="default">Sort: Default</option><option value="due_asc">期限: 昇順</option><option value="due_desc">期限: 降順</option>
                     </select>
                     <button className="btn btn-primary" onClick={openCreatePanel}>＋ New Task</button>

@@ -7,6 +7,7 @@ import styles from '../tasks/page.module.css'
 import SlidePanel from '../../../components/SlidePanel/SlidePanel'
 import DateInput from '../../../components/DateInput/DateInput'
 import { createClient } from '../../../lib/supabase/client'
+import { usePreferences } from '../../../hooks/usePreferences'
 import type { Article } from '../../../types/database'
 
 const PLATFORM_OPTIONS = ['note', '自社サイト', 'X', 'Qiita', 'Zenn', 'Medium', 'YouTube', 'Instagram']
@@ -18,6 +19,15 @@ export default function ArticlesPage() {
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
     const [filterStatus, setFilterStatus] = useState<string>('all')
     const [sortOrder, setSortOrder] = useState<string>('default')
+
+    // Filter/Sort設定の永続化
+    const { preferences, savePreferences, loaded } = usePreferences()
+    useEffect(() => {
+        if (loaded && preferences.articles) {
+            setFilterStatus(preferences.articles.filterStatus)
+            setSortOrder(preferences.articles.sortOrder)
+        }
+    }, [loaded])
     const [isPanelOpen, setIsPanelOpen] = useState(false)
     const [panelMode, setPanelMode] = useState<'create' | 'edit'>('create')
     const [editing, setEditing] = useState<Article | null>(null)
@@ -171,13 +181,21 @@ export default function ArticlesPage() {
             <div className={styles.header}>
                 <h1 className="text-page-title">Articles</h1>
                 <div className={styles.actions} style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-                    <select className="select" style={{ width: 'auto', paddingRight: '28px' }} value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
+                    <select className="select" style={{ width: 'auto', paddingRight: '28px' }} value={filterStatus} onChange={e => {
+                        const v = e.target.value
+                        setFilterStatus(v)
+                        savePreferences('articles', { filterStatus: v, sortOrder })
+                    }}>
                         <option value="all">Filter: All</option>
                         <option value="アイデア">アイデア</option>
                         <option value="下書き">下書き</option>
                         <option value="投稿済み">投稿済み</option>
                     </select>
-                    <select className="select" style={{ width: 'auto', paddingRight: '28px' }} value={sortOrder} onChange={e => setSortOrder(e.target.value)}>
+                    <select className="select" style={{ width: 'auto', paddingRight: '28px' }} value={sortOrder} onChange={e => {
+                        const v = e.target.value
+                        setSortOrder(v)
+                        savePreferences('articles', { filterStatus, sortOrder: v })
+                    }}>
                         <option value="default">Sort: Default</option>
                         <option value="month_asc">Month: 昇順</option>
                         <option value="month_desc">Month: 降順</option>

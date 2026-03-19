@@ -9,6 +9,7 @@ import DateInput from '../../../components/DateInput/DateInput'
 import { createClient } from '../../../lib/supabase/client'
 import type { BusinessCard } from '../../../types/database'
 import { useToast } from '@/components/Toast/Toast'
+import { usePreferences } from '../../../hooks/usePreferences'
 
 export default function BusinessCardsPage() {
     const supabase = createClient()
@@ -32,6 +33,15 @@ export default function BusinessCardsPage() {
     // Filter & Sort
     const [filterStatus, setFilterStatus] = useState<'All' | 'Met' | 'Not Met'>('All')
     const [sortKey, setSortKey] = useState<'newest' | 'oldest' | 'affinity_high' | 'affinity_low'>('newest')
+
+    // Filter/Sort設定の永続化
+    const { preferences, savePreferences, loaded } = usePreferences()
+    useEffect(() => {
+        if (loaded && preferences.businesscards) {
+            setFilterStatus(preferences.businesscards.filterStatus as any)
+            setSortKey(preferences.businesscards.sortKey as any)
+        }
+    }, [loaded])
 
     const fetchCards = useCallback(async () => {
         setLoading(true)
@@ -157,12 +167,20 @@ export default function BusinessCardsPage() {
             <div className={styles.header}>
                 <h1 className="text-page-title">BusinessCards</h1>
                 <div className={styles.actions} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                    <select className="select" style={{ width: 'auto', paddingRight: '28px' }} value={filterStatus} onChange={e => setFilterStatus(e.target.value as any)}>
+                    <select className="select" style={{ width: 'auto', paddingRight: '28px' }} value={filterStatus} onChange={e => {
+                        const v = e.target.value as any
+                        setFilterStatus(v)
+                        savePreferences('businesscards', { filterStatus: v, sortKey })
+                    }}>
                         <option value="All">Filter: All</option>
                         <option value="Met">Met</option>
                         <option value="Not Met">Not Met</option>
                     </select>
-                    <select className="select" style={{ width: 'auto', paddingRight: '28px' }} value={sortKey} onChange={e => setSortKey(e.target.value as any)}>
+                    <select className="select" style={{ width: 'auto', paddingRight: '28px' }} value={sortKey} onChange={e => {
+                        const v = e.target.value as any
+                        setSortKey(v)
+                        savePreferences('businesscards', { filterStatus, sortKey: v })
+                    }}>
                         <option value="newest">Sort: 新しい順</option>
                         <option value="oldest">Sort: 古い順</option>
                         <option value="affinity_high">Affinity: 高→低</option>
