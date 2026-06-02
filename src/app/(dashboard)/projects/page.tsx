@@ -85,6 +85,11 @@ export default function ProjectsPage() {
 
     // ── 作業履歴（選択プロジェクト依存：ローカルfetch）──
     const [logs, setLogs] = useState<MaintenanceLog[]>([])
+    const [logEditing, setLogEditing] = useState<MaintenanceLog | null>(null)
+    const [logEditDesc, setLogEditDesc] = useState('')
+    const [logEditDate, setLogEditDate] = useState('')
+    const [logEditHours, setLogEditHours] = useState(0)
+    const [logEditMinutes, setLogEditMinutes] = useState(0)
     const [logMonth, setLogMonth] = useState(() => {
         const now = new Date()
         return `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}`
@@ -105,6 +110,7 @@ export default function ProjectsPage() {
         setTimerRunning(false)
         setTimerSeconds(0)
         setWorkDescription('')
+        setLogEditing(null)
     }, [selected?.id])
 
     // 作業履歴fetch（選択プロジェクト依存のためローカルfetch維持）
@@ -164,6 +170,7 @@ export default function ProjectsPage() {
         setTimerSeconds(0)
         setWorkDescription('')
         setReqPanelOpen(false)
+        setLogEditing(null)
     }
 
     const handleSave = async () => {
@@ -240,7 +247,32 @@ export default function ProjectsPage() {
 
     const handleDeleteLog = async (logId: string) => {
         await supabase.from('maintenance_logs').delete().eq('id', logId)
+        if (logEditing?.id === logId) closeLogEdit()
         if (selected) fetchLogs(selected.id, logMonth)
+    }
+
+    // 作業履歴の編集（タイマー押し忘れ対策）
+    const openLogEdit = (log: MaintenanceLog) => {
+        setLogEditing(log)
+        setLogEditDesc(log.description)
+        setLogEditDate(log.work_date)
+        setLogEditHours(Math.floor(log.duration_seconds / 3600))
+        setLogEditMinutes(Math.floor((log.duration_seconds % 3600) / 60))
+    }
+
+    const closeLogEdit = () => setLogEditing(null)
+
+    const handleLogUpdate = async () => {
+        if (!logEditing || !selected) return
+        const duration = logEditHours * 3600 + logEditMinutes * 60
+        await supabase.from('maintenance_logs').update({
+            description: logEditDesc || '作業',
+            duration_seconds: duration,
+            work_date: logEditDate,
+        }).eq('id', logEditing.id)
+        showToast('作業履歴を更新しました')
+        closeLogEdit()
+        fetchLogs(selected.id, logMonth)
     }
 
     // 月ナビゲーション
@@ -472,16 +504,40 @@ export default function ProjectsPage() {
                                                 <>
                                                     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                                                         {logs.map(log => (
-                                                            <div key={log.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', border: '1px solid var(--color-border)', borderRadius: 'var(--border-radius)', background: 'var(--color-bg)' }}>
-                                                                <div>
-                                                                    <div style={{ fontWeight: 500 }}>{log.description}</div>
-                                                                    <div className="text-secondary" style={{ fontSize: 12, marginTop: 2 }}>{log.work_date}</div>
+                                                            logEditing?.id === log.id ? (
+                                                                <div key={log.id} style={{ padding: '12px 16px', border: '1px solid var(--color-brand)', borderRadius: 'var(--border-radius)', background: 'var(--color-surface)' }}>
+                                                                    <div className={styles.formGrid}>
+                                                                        <label>作業内容</label>
+                                                                        <input type="text" className="select" value={logEditDesc} onChange={e => setLogEditDesc(e.target.value)} placeholder="作業内容を入力..." style={{ backgroundImage: 'none', cursor: 'text' }} />
+                                                                        <label>作業日</label>
+                                                                        <DateInput value={logEditDate} onChange={setLogEditDate} />
+                                                                        <label>作業時間</label>
+                                                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                                            <input type="number" min={0} className="select" value={logEditHours} onChange={e => setLogEditHours(Math.max(0, Number(e.target.value)))} style={{ backgroundImage: 'none', cursor: 'text', width: 80 }} />
+                                                                            <span className="text-secondary">時間</span>
+                                                                            <input type="number" min={0} max={59} className="select" value={logEditMinutes} onChange={e => setLogEditMinutes(Math.min(59, Math.max(0, Number(e.target.value))))} style={{ backgroundImage: 'none', cursor: 'text', width: 80 }} />
+                                                                            <span className="text-secondary">分</span>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+                                                                        <button className="btn btn-primary" onClick={handleLogUpdate}>Save</button>
+                                                                        <button className="btn btn-outline" style={{ color: 'var(--color-danger)', borderColor: 'var(--color-danger)' }} onClick={() => handleDeleteLog(log.id)}>Delete</button>
+                                                                        <button className="btn btn-outline" onClick={closeLogEdit}>Cancel</button>
+                                                                    </div>
                                                                 </div>
-                                                                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                                                    <span className="text-mono" style={{ fontWeight: 500 }}>{formatDuration(log.duration_seconds)}</span>
-                                                                    <button onClick={() => handleDeleteLog(log.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-tertiary)', fontSize: 14 }} title="削除">×</button>
+                                                            ) : (
+                                                                <div key={log.id} onClick={() => openLogEdit(log)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', border: '1px solid var(--color-border)', borderRadius: 'var(--border-radius)', background: 'var(--color-bg)', cursor: 'pointer' }}>
+                                                                    <div>
+                                                                        <div style={{ fontWeight: 500 }}>{log.description}</div>
+                                                                        <div className="text-secondary" style={{ fontSize: 12, marginTop: 2 }}>{log.work_date}</div>
+                                                                    </div>
+                                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                                                        <button onClick={e => { e.stopPropagation(); openLogEdit(log) }} className="btn btn-outline" style={{ padding: '4px 12px', fontSize: 12, color: 'var(--color-brand)', borderColor: 'var(--color-brand)' }}>編集</button>
+                                                                        <span className="text-mono" style={{ fontWeight: 500 }}>{formatDuration(log.duration_seconds)}</span>
+                                                                        <button onClick={e => { e.stopPropagation(); handleDeleteLog(log.id) }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-tertiary)', fontSize: 14 }} title="削除">×</button>
+                                                                    </div>
                                                                 </div>
-                                                            </div>
+                                                            )
                                                         ))}
                                                     </div>
 
