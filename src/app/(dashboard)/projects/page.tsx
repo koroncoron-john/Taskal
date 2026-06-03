@@ -532,7 +532,6 @@ export default function ProjectsPage() {
                                                                         <div className="text-secondary" style={{ fontSize: 12, marginTop: 2 }}>{log.work_date}</div>
                                                                     </div>
                                                                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                                                        <button onClick={e => { e.stopPropagation(); openLogEdit(log) }} className="btn btn-outline" style={{ padding: '4px 12px', fontSize: 12, color: 'var(--color-brand)', borderColor: 'var(--color-brand)' }}>編集</button>
                                                                         <span className="text-mono" style={{ fontWeight: 500 }}>{formatDuration(log.duration_seconds)}</span>
                                                                         <button onClick={e => { e.stopPropagation(); handleDeleteLog(log.id) }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-tertiary)', fontSize: 14 }} title="削除">×</button>
                                                                     </div>
