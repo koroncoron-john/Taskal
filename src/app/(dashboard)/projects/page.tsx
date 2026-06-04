@@ -246,6 +246,7 @@ export default function ProjectsPage() {
     }
 
     const handleDeleteLog = async (logId: string) => {
+        if (!confirm('この作業履歴を削除しますか？\nこの操作は取り消せません。')) return
         await supabase.from('maintenance_logs').delete().eq('id', logId)
         if (logEditing?.id === logId) closeLogEdit()
         if (selected) fetchLogs(selected.id, logMonth)
@@ -533,7 +534,6 @@ export default function ProjectsPage() {
                                                                     </div>
                                                                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                                                                         <span className="text-mono" style={{ fontWeight: 500 }}>{formatDuration(log.duration_seconds)}</span>
-                                                                        <button onClick={e => { e.stopPropagation(); handleDeleteLog(log.id) }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-tertiary)', fontSize: 14 }} title="削除">×</button>
                                                                     </div>
                                                                 </div>
                                                             )
