@@ -47,6 +47,14 @@ const formatDuration = (seconds: number) => {
     return `${s}秒`
 }
 
+const getLocalDate = () => {
+    const now = new Date()
+    const year = now.getFullYear()
+    const month = (now.getMonth() + 1).toString().padStart(2, '0')
+    const day = now.getDate().toString().padStart(2, '0')
+    return `${year}-${month}-${day}`
+}
+
 export default function ProjectsPage() {
     const supabase = createClient()
     const { showToast } = useToast()
@@ -81,6 +89,7 @@ export default function ProjectsPage() {
     const [timerRunning, setTimerRunning] = useState(false)
     const [timerSeconds, setTimerSeconds] = useState(0)
     const [workDescription, setWorkDescription] = useState('')
+    const [isSavingLog, setIsSavingLog] = useState(false)
     const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
     // ── 作業履歴（選択プロジェクト依存：ローカルfetch）──
@@ -231,18 +240,31 @@ export default function ProjectsPage() {
 
     // タイマー記録を保存
     const handleSaveLog = async () => {
-        if (!selected || timerSeconds === 0) return
-        const today = new Date().toISOString().slice(0, 10)
-        await supabase.from('maintenance_logs').insert({
+        if (!selected || timerSeconds === 0 || isSavingLog) return
+
+        setIsSavingLog(true)
+        const today = getLocalDate()
+        const description = workDescription.trim() || '作業'
+        const { error } = await supabase.from('maintenance_logs').insert({
             project_id: selected.id,
-            description: workDescription || '作業',
+            description,
             duration_seconds: timerSeconds,
             work_date: today,
         })
+
+        if (error) {
+            console.error('Maintenance log save failed:', error)
+            showToast(`作業記録を保存できませんでした: ${error.message}`, 'error')
+            setIsSavingLog(false)
+            return
+        }
+
         setTimerRunning(false)
         setTimerSeconds(0)
         setWorkDescription('')
-        fetchLogs(selected.id, logMonth)
+        setIsSavingLog(false)
+        showToast(`「${description}」の作業記録を保存しました`)
+        await fetchLogs(selected.id, logMonth)
     }
 
     const handleDeleteLog = async (logId: string) => {
@@ -477,7 +499,9 @@ export default function ProjectsPage() {
                                             )}
                                             <button className="btn btn-outline" onClick={() => { setTimerRunning(false); setTimerSeconds(0) }}>↺ Reset</button>
                                             {timerSeconds > 0 && !timerRunning && (
-                                                <button className="btn btn-primary" onClick={handleSaveLog}>💾 記録する</button>
+                                                <button className="btn btn-primary" onClick={handleSaveLog} disabled={isSavingLog}>
+                                                    {isSavingLog ? '保存中...' : '💾 記録する'}
+                                                </button>
                                             )}
                                         </div>
 
